@@ -17,6 +17,8 @@ Nhật ký lỗi đã gặp và cách sửa, nhóm theo loại. Đọc trước 
 
 - **`.gitignore` có `.env.*` nên ignore luôn `.env.example`** (Sprint 1 – Task 1). **Sửa:** thêm `!.env.example` ngay sau dòng `.env.*`. **Bài học:** kiểm tra bằng `git check-ignore -v <file>`: `.env` phải bị ignore, `.env.example` thì không.
 - **Điền nhầm `SUPABASE_URL` bằng Postgres connection string** (`postgresql://...pooler.supabase.com`) khiến backend crash "Invalid supabaseUrl". Ngoài ra value có dấu cách thừa sau `=`. **Sửa:** `SUPABASE_URL=https://<project-ref>.supabase.co` (lấy ở hộp thoại Connect / Settings → API Keys), không để dấu cách. **Bài học:** khi kiểm tra `.env` thì che toàn bộ value, không in ra phần nào, vì connection string chứa mật khẩu DB.
+- **Kết luận về `main` từ branch local chưa cập nhật** (Sprint 1 – Task 7). Xem `main` local nên báo sai là chưa có code US-01, trong khi remote đã có Task 5 qua pull request #1. **Sửa:** `git fetch` rồi so với `origin/main` trước khi kết luận. **Bài học:** luôn fetch trước khi nhận định về trạng thái branch.
+- **Dừng background task trên Windows không dừng process con** (Sprint 1 – Task 7). Sau khi dừng task `npm start` và `npm run dev`, `node` vẫn giữ cổng 4000 và 5173. **Sửa:** tìm PID qua `netstat -ano`, đối chiếu lệnh và thời điểm tạo rồi `Stop-Process` đúng PID đó. **Bài học:** kiểm tra cổng đã trống rồi mới báo server đã dừng.
 
 ## Giao diện
 
