@@ -118,15 +118,17 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** `express.json` đang chạy trước `requireAuth`, lệch thứ tự ở PRD 4.4. Giao agent-coder.
 
 **Công việc:**
-- [ ] Bỏ `express.json` khỏi `app.js`, gắn bằng `router.use` đầu `auth.routes.js` (D20)
-- [ ] Bỏ cờ `todo` của 4 case trong `backend/test/profile.http.test.js`
-- [ ] Thêm test cho các trường hợp bên dưới
+- [x] Bỏ `express.json` khỏi `app.js`, gắn bằng `router.use` đầu `auth.routes.js` (D20)
+- [x] Bỏ cờ `todo` của 4 case trong `backend/test/profile.http.test.js`
+- [x] Thêm test cho các trường hợp bên dưới
 
 **Acceptance Criteria:**
 - `PUT /api/user/profile` không token, kèm JSON hỏng hoặc body trên 1 MB, trả `401`
 - `PUT /api/user/profile` có token, `Content-Type: application/json`, body hỏng hoặc trên 1 MB, trả `415` (phát hiện ở Task 1)
 - `/api/auth/*` vẫn trả lỗi JSON như trước
 - Route không tồn tại ngoài `/api/auth/*`, kèm JSON hỏng, trả `404`
+
+**Kết quả (2026-11-02):** `npm test` trên Node 24 exit 0 ba lần liên tiếp: 113 pass, 0 fail, 0 todo. Chạy các test này trên code cũ thì 10 case fail, các case của `/api/auth/*` vẫn pass, nên hành vi auth không đổi. Chạy thử trên instance nối Supabase thật (`NODE_ENV=production`, JWT secret tạm, không ghi dữ liệu): đủ 4 acceptance criteria, multipart vẫn tới bước validate, CORS preflight không đổi. Chưa thử đăng nhập và lưu hồ sơ thành công trên project thật, vì lưu hồ sơ sẽ ghi dữ liệu.
 
 ---
 

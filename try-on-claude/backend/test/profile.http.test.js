@@ -12,7 +12,6 @@ import {
 } from './helpers.js';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-const TASK4 = 'Sprint 2 Task 4: express.json still runs before requireAuth';
 
 // Every case here must stop before the service layer (which would call Supabase), so the guard stays unused.
 describe('PUT /api/user/profile: error order (PRD 4.4)', () => {
@@ -80,12 +79,12 @@ describe('PUT /api/user/profile: error order (PRD 4.4)', () => {
       assertError(await put(bearer(expired), buildForm()), 401, 'TOKEN_EXPIRED');
     });
 
-    it('PUT without a token and with malformed JSON is 401', { todo: TASK4 }, async () => {
+    it('PUT without a token and with malformed JSON is 401', async () => {
       const res = await put({ 'Content-Type': 'application/json' }, '{"broken":');
       assertError(res, 401, 'AUTH_REQUIRED');
     });
 
-    it('PUT without a token and with a JSON body over 1 MB is 401', { todo: TASK4 }, async () => {
+    it('PUT without a token and with a JSON body over 1 MB is 401', async () => {
       const big = JSON.stringify({ filler: 'x'.repeat(1024 * 1024 + 1024) });
       const res = await put({ 'Content-Type': 'application/json' }, big);
       assertError(res, 401, 'AUTH_REQUIRED');
@@ -118,12 +117,12 @@ describe('PUT /api/user/profile: error order (PRD 4.4)', () => {
       assertError(await put(auth), 415, 'UNSUPPORTED_MEDIA_TYPE');
     });
 
-    it('JSON with a malformed body is 415', { todo: TASK4 }, async () => {
+    it('JSON with a malformed body is 415', async () => {
       const res = await put({ ...auth, 'Content-Type': 'application/json' }, '{"broken":');
       assertError(res, 415, 'UNSUPPORTED_MEDIA_TYPE');
     });
 
-    it('JSON body over 1 MB is 415', { todo: TASK4 }, async () => {
+    it('JSON body over 1 MB is 415', async () => {
       const big = JSON.stringify({ filler: 'x'.repeat(1024 * 1024 + 1024) });
       const res = await put({ ...auth, 'Content-Type': 'application/json' }, big);
       assertError(res, 415, 'UNSUPPORTED_MEDIA_TYPE');

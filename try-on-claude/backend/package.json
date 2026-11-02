@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --import ./test/setup.js --test test/profile.validator.test.js test/profile.http.test.js test/auth-token.http.test.js",
+    "test": "node --import ./test/setup.js --test test/profile.validator.test.js test/profile.http.test.js test/body-parsing.http.test.js test/auth-token.http.test.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -50,7 +50,7 @@ Ngoài phạm vi Sprint 1: xác minh email, quên/đổi mật khẩu, xoá ản
 | D18 | Nhận biết hết phiên ở frontend | Theo `code` (`AUTH_REQUIRED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`), không theo URL hay status | `INVALID_CREDENTIALS` của login cũng là 401 nhưng không được redirect |
 | D19 | Hạn token ở frontend | Không tự giải mã `exp`; guard chỉ xét có token hay không, server là bên quyết định | Tránh lỗi do đồng hồ máy khách sai và không cần thêm logic giải mã. Đánh đổi: token hết hạn chỉ bị phát hiện ở lần gọi API kế tiếp |
 
-**Gia cố Sprint 2.** D20–D30 là thiết kế đích của Sprint 2 Task 4, 6, 7, người dùng đã chốt ngày 2026-11-02. Code hiện tại chưa làm theo các quyết định này; phần liên quan trong tài liệu sẽ đúng với code sau khi các task đó xong.
+**Gia cố Sprint 2.** D20–D30 là thiết kế đích của Sprint 2 Task 4, 6, 7, người dùng đã chốt ngày 2026-11-02. D20 (Task 4) đã cài đặt trong code. Code chưa làm theo D21–D30; phần liên quan trong tài liệu sẽ đúng với code sau khi Task 6, 7 xong.
 
 | # | Vấn đề | Quyết định | Lý do |
 |---|--------|-----------|-------|
