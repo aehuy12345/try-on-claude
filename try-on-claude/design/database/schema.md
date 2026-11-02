@@ -83,6 +83,9 @@ erDiagram
 - Sprint sau (GenAI thử đồ) backend đọc ảnh bằng service role/signed URL, không cần public.
 
 **Thay ảnh (US-02: ảnh mới thay ảnh cũ, chỉ 1 ảnh/người):**
+
+Trước bước 1 (Sprint 2 Task 7, đã chốt, chưa cài đặt): encode lại ảnh bằng `sharp` để bỏ metadata, kết quả không vượt `file_size_limit` ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt)). Lỗi ở đây thì chưa gọi Storage hay DB.
+
 1. Upload ảnh mới vào path mới.
 2. Cập nhật `profiles.body_photo_path` = path mới.
 3. Nếu bước 2 lỗi → xoá ảnh mới vừa upload (rollback) và trả lỗi.
@@ -144,5 +147,5 @@ Response profile đề xuất:
 - **Select tường minh** các cột cần, không `select('*')`; chỉ lấy `password_hash` trong login.
 - **JWT:** payload `{ sub: id, role }`. Đổi role thì token cũ vẫn mang role cũ đến khi hết hạn → endpoint Admin (sprint sau) nên kiểm tra lại `role` trong DB.
 - **Số đo:** validate 100–250 cm / 30–250 kg, làm tròn 1 chữ số thập phân. PostgREST trả `numeric` dạng JSON number.
-- **Ảnh:** validate magic bytes (JPEG/PNG, không tin MIME khai báo) + ≤ 5 MB ở backend trước khi upload (bucket chặn thêm một lớp). Upload với `contentType` và `ext` suy ra từ magic bytes, path `${userId}/${Date.now()}.${ext}`, theo thứ tự thay ảnh ở mục 4. `createSignedUrl` lỗi (vd object chưa tồn tại như seed) → `bodyPhotoUrl: null`, không trả 500.
+- **Ảnh:** validate magic bytes (JPEG/PNG, không tin MIME khai báo) + ≤ 5 MB ở backend, rồi encode lại ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt), sau Task 7) trước khi upload (bucket chặn thêm một lớp). Upload với `contentType` và `ext` suy ra từ magic bytes, path `${userId}/${Date.now()}.${ext}`, theo thứ tự thay ảnh ở mục 4. `createSignedUrl` lỗi (vd object chưa tồn tại như seed) → `bodyPhotoUrl: null`, không trả 500.
 - `updated_at` do trigger cập nhật, backend không cần gửi.

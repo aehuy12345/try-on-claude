@@ -1,6 +1,6 @@
 # Flow: Upload và thay ảnh toàn thân
 
-US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
+US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16, D25–D30. Các bước xử lý ảnh bằng `sharp` là hành vi đích của Sprint 2 Task 7, đã chốt, chưa cài đặt. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
 
 ## Chọn ảnh ở client
 
@@ -43,7 +43,7 @@ flowchart TD
 
 ## Xử lý ở server (có file trong `PUT`)
 
-Chạy sau khi field đã hợp lệ. Các bước 1–4 của schema mục 4 được đánh dấu trong sơ đồ.
+Chạy sau khi field đã hợp lệ. Các bước 1–4 của schema mục 4 được đánh dấu trong sơ đồ. Mọi nhánh lỗi trước bước 1 chưa ghi gì, nên D10 được giữ.
 
 ```mermaid
 flowchart TD
@@ -55,6 +55,19 @@ flowchart TD
         B1{"Magic bytes là JPEG hoặc PNG?"}
         B2["400: INVALID_FILE_TYPE"]
         B3["Lấy ext và contentType từ magic bytes"]
+        P1["Vào hàng đợi: mỗi process xử lý một ảnh một lúc"]
+        P2{"metadata đọc được header?"}
+        P3["400: INVALID_FILE_TYPE, Không đọc được ảnh"]
+        P4{"Rộng x cao ≤ 70 triệu pixel?"}
+        P5["413: FILE_TOO_LARGE, Ảnh quá lớn để xử lý"]
+        P6["Encode lần 1: autoOrient, sRGB, bỏ metadata; JPEG quality 90 hoặc PNG level 9 adaptive"]
+        P7{"Encode lần 1 thành công?"}
+        P8{"Lỗi out of memory hoặc lỗi nội bộ?"}
+        P9["500: UPLOAD_FAILED, ghi log"]
+        P10{"Kết quả ≤ 5 MB?"}
+        P11["Encode lần 2: JPEG quality 75 hoặc PNG level 9"]
+        P12{"Encode lần 2 thành công?"}
+        P13{"Kết quả ≤ 5 MB?"}
         B4["SELECT lấy path cũ"]
         B5["Sinh path mới: userId/Date.now().ext"]
         B6{"Upload được?"}
@@ -82,7 +95,24 @@ flowchart TD
 
     B1 -->|"Không"| B2
     B1 -->|"Có"| B3
-    B3 --> B4
+    B3 --> P1
+    P1 --> P2
+    P2 -->|"Không"| P3
+    P2 -->|"Có"| P4
+    P4 -->|"Không"| P5
+    P4 -->|"Có"| P6
+    P6 --> P7
+    P7 -->|"Không"| P8
+    P7 -->|"Có"| P10
+    P8 -->|"Không, file hỏng"| P3
+    P8 -->|"Có"| P9
+    P10 -->|"Có"| B4
+    P10 -->|"Không"| P11
+    P11 --> P12
+    P12 -->|"Không"| P8
+    P12 -->|"Có"| P13
+    P13 -->|"Có"| B4
+    P13 -->|"Không"| P5
     B4 --> S0
     S0 --> B5
     B5 --> S1
@@ -106,6 +136,9 @@ flowchart TD
     B15 --> B17
     B16 --> B17
     B2 --> F1
+    P3 --> F1
+    P5 --> F1
+    P9 --> F1
     B7 --> F1
     B10 --> F1
     B17 --> F1
@@ -118,6 +151,9 @@ flowchart TD
 | File sai loại (không phải jpg/jpeg/png, gồm HEIC) | Client chặn; server `400 INVALID_FILE_TYPE` | Ảnh phải ở định dạng JPG hoặc PNG. | Lỗi tại vùng chọn ảnh; giữ ảnh hiện tại |
 | Đổi đuôi file giả mạo (vd `.exe` thành `.jpg`) | Thường bị chặn ở bước giải mã client; server `400 INVALID_FILE_TYPE` | Client: Không đọc được ảnh. Vui lòng chọn ảnh khác. | Không nhận file |
 | File vượt 5 MB | Client chặn; server `413 FILE_TOO_LARGE` | Ảnh không được vượt quá 5 MB. | Lỗi tại vùng chọn ảnh |
+| Đúng magic bytes nhưng hỏng hoặc cụt | Thường bị chặn ở bước giải mã client; server `400 INVALID_FILE_TYPE` | Không đọc được ảnh. Vui lòng chọn ảnh khác. | Lỗi tại vùng chọn ảnh; không có field nào được ghi |
+| Ảnh quá 70 triệu pixel, hoặc vẫn trên 5 MB sau encode lần 2 | `413 FILE_TOO_LARGE` | Ảnh quá lớn để xử lý. Vui lòng chọn ảnh có độ phân giải hoặc dung lượng nhỏ hơn. | Lỗi tại vùng chọn ảnh; không có field nào được ghi |
+| Hết bộ nhớ hoặc lỗi nội bộ khi xử lý ảnh | `500 UPLOAD_FAILED` | Không thể tải ảnh lên lúc này. Vui lòng thử lại. | Giữ form và file; **chưa có gì được lưu** |
 | Ảnh không đúng ratio hoặc nhỏ hơn khuyến nghị | Không có lỗi (không tới server) | Cảnh báo: "Ảnh có thể chưa phù hợp để thử đồ. Nên dùng ảnh toàn thân, đứng thẳng, dọc tỉ lệ 3:4 hoặc 9:16, chiều ngắn từ 720 px." | Không chặn; hiện cạnh preview kèm nút chọn ảnh khác |
 | Gửi nhiều file, sai tên part, multipart hỏng | `400 INVALID_UPLOAD` | Dữ liệu tải lên không hợp lệ. Vui lòng thử lại. | Thông báo trên form (UI bình thường không gây ra) |
 | Upload Storage lỗi | `500 UPLOAD_FAILED` | Không thể tải ảnh lên lúc này. Vui lòng thử lại. | Giữ form và file; **chưa có gì được lưu**, kể cả field hợp lệ |
@@ -125,6 +161,21 @@ flowchart TD
 | Xoá ảnh cũ lỗi | `200` | Lưu thành công. | Bình thường; backend ghi log |
 | Tạo signed URL lỗi sau khi lưu | `200`, `bodyPhotoUrl: null` | Lưu thành công. | Tiếp tục hiện preview cục bộ từ file vừa chọn |
 | Mất mạng, timeout 60 giây | Không có | Không thể kết nối tới máy chủ. Vui lòng thử lại. | Giữ form và file. Server có thể đã lưu xong; gửi lại an toàn vì ảnh sau thay ảnh trước |
+
+## Quy tắc xử lý ảnh ở server
+
+| Trường hợp | Hành vi |
+|------------|---------|
+| Thứ tự | Sau magic bytes, trước `SELECT` path cũ và upload. Validator không đổi, bước này nằm ở service |
+| EXIF, GPS, XMP, IPTC, chunk text của PNG, dữ liệu nối sau cuối file | Bị bỏ khi encode lại |
+| Hướng xoay EXIF | Áp vào pixel bằng `autoOrient()`. Kích thước sau xử lý khớp `naturalWidth`, `naturalHeight` mà client dùng để cảnh báo |
+| Display P3 và profile màu khác | Chuyển sang sRGB rồi bỏ ICC, màu hiển thị không lệch |
+| JPEG CMYK | Thành JPEG sRGB 3 kênh |
+| PNG 16 bit | Thành PNG 8 bit |
+| PNG có alpha | Giữ alpha |
+| APNG | Chỉ giữ khung đầu, thành PNG tĩnh |
+| JPEG cụt, PNG cụt | `metadata()` vẫn thành công, lỗi chỉ xuất hiện khi encode |
+| Ratio, kích thước khuyến nghị | Vẫn chỉ là cảnh báo ở client (D15) |
 
 ## Quy tắc kiểm tra kích thước
 
@@ -142,6 +193,7 @@ TTL 1 giờ. Ảnh đã hiển thị vẫn còn trên màn hình; chỉ lần t�
 
 ## Ghi chú bảo mật
 
+- Ảnh tải lên từ Task 7 không còn metadata (D25); ảnh đã có trước đó xem [D30](../PRD.md#2-quyết-định-đã-chốt).
 - Path do server sinh từ `sub` trong JWT và thời gian; không dùng tên file hay MIME từ client, nên không có path traversal và không lưu được file giả dạng.
 - Bucket private, không có policy; bucket chặn thêm một lớp 5 MB và MIME ([schema mục 4](../database/schema.md#4-storage-bucket-body-photos)). Xoá object qua Storage API.
 - Không log signed URL. Object URL của preview phải được thu hồi khi bỏ file hoặc rời trang.

@@ -1,6 +1,6 @@
 # Flow: Lấy và cập nhật hồ sơ
 
-US-02. API: [PRD 4.3, 4.4](../PRD.md#43-get-apiuserprofile). Quyết định: D9–D14. Phần xử lý file: [flow ảnh toàn thân](upload-body-photo.md). Xác thực: [flow bảo vệ route](logout-protected-routes.md).
+US-02. API: [PRD 4.3, 4.4](../PRD.md#43-get-apiuserprofile). Quyết định: D9–D14, D20–D24. Rate limit trong sơ đồ cập nhật là hành vi đích của Sprint 2 Task 6, đã chốt, chưa cài đặt. Phần xử lý file: [flow ảnh toàn thân](upload-body-photo.md). Xác thực: [flow bảo vệ route](logout-protected-routes.md).
 
 ## Lấy hồ sơ
 
@@ -95,6 +95,8 @@ flowchart TD
         B1["requireAuth"]
         B2{"Content-Type multipart?"}
         B3["415: UNSUPPORTED_MEDIA_TYPE"]
+        B15{"Trong ngưỡng 20 lần mỗi 10 phút theo user?"}
+        B16["429: TOO_MANY_REQUESTS, không đọc body"]
         B4["multer parse (bộ nhớ, giới hạn)"]
         B5{"Parse được?"}
         B6["413: FILE_TOO_LARGE hoặc 400: INVALID_UPLOAD"]
@@ -102,7 +104,7 @@ flowchart TD
         B8{"Hợp lệ?"}
         B9["400: INVALID_DISPLAY_NAME, INVALID_HEIGHT hoặc INVALID_WEIGHT"]
         B10{"Có file?"}
-        B11["Kiểm tra và upload ảnh: xem flow ảnh toàn thân"]
+        B11["Kiểm tra, xử lý và upload ảnh: xem flow ảnh toàn thân"]
         B12["Tạo signed URL, 200: hồ sơ"]
         B13["Lỗi: rollback nếu đã upload, 500"]
         B14{"UPDATE thành công?"}
@@ -122,7 +124,9 @@ flowchart TD
     B1 -->|"Token lỗi: 401"| F5
     B1 -->|"Hợp lệ"| B2
     B2 -->|"Không"| B3
-    B2 -->|"Có"| B4
+    B2 -->|"Có"| B15
+    B15 -->|"Không"| B16
+    B15 -->|"Có"| B4
     B4 --> B5
     B5 -->|"Không"| B6
     B5 -->|"Có"| B7
@@ -131,12 +135,13 @@ flowchart TD
     B8 -->|"Có"| B10
     B10 -->|"Có"| B11
     B11 -->|"Thành công"| S1
-    B11 -->|"Lỗi file hoặc upload: 400, 500"| F5
+    B11 -->|"Lỗi file hoặc upload: 400, 413, 500"| F5
     B10 -->|"Không"| S1
     S1 --> B14
     B14 -->|"Có"| B12
     B14 -->|"Không"| B13
     B3 --> F5
+    B16 --> F5
     B6 --> F5
     B9 --> F5
     B12 --> F5
@@ -159,6 +164,7 @@ flowchart TD
 | Tên hiển thị quá dài | Client chặn; server `400 INVALID_DISPLAY_NAME` | Tên hiển thị tối đa 50 ký tự. | Lỗi dưới ô |
 | Tải hồ sơ thất bại | `500` hoặc lỗi mạng | Không tải được hồ sơ. Vui lòng thử lại. | Trạng thái lỗi + Thử lại; không hiện form trống để tránh lưu đè |
 | Lưu thất bại | `500 INTERNAL_ERROR` hoặc lỗi mạng | Đã có lỗi xảy ra. Vui lòng thử lại. (lỗi mạng: Không thể kết nối tới máy chủ. Vui lòng thử lại.) | Giữ toàn bộ dữ liệu và file; bật lại nút |
+| Lưu quá nhiều lần | `429 TOO_MANY_REQUESTS` | Bạn đã lưu quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau 10 phút. | Thông báo chung trên form; giữ toàn bộ dữ liệu và file; bật lại nút. Không có field nào được ghi |
 | Lỗi file ảnh | Xem [flow ảnh](upload-body-photo.md#nhánh-lỗi) | | Không có field nào được ghi |
 
 ## Quy tắc
@@ -170,12 +176,14 @@ flowchart TD
 - **Xoá tên hiển thị (D14):** xoá trống ô rồi lưu; frontend luôn gửi `displayName`, server đổi rỗng thành `null`.
 - **Email:** chỉ hiển thị. Server bỏ qua `email`, `role`, `phone` và mọi field ngoài whitelist (D11).
 - **Nút Lưu** chỉ bật khi form có thay đổi và form đã tải xong.
+- **Thứ tự kiểm tra ở server (D20, D21):** xác thực → Content-Type → rate limit → parse multipart. `PUT` không có parser JSON nên JSON hỏng nhận `401` hoặc `415`, không nhận `400 INVALID_JSON`.
+- **Rate limit (D22, D23):** đếm cả request thất bại và request không có file. `415` không bị đếm. Thông báo ghi sẵn 10 phút là thời gian chờ tối đa nên UI không đọc `Retry-After`.
 
 ## Giữ bản nháp
 
 | Tình huống | Hành vi |
 |------------|---------|
-| Lỗi validate, `4xx`, `5xx`, lỗi mạng | Form giữ nguyên trong bộ nhớ, kể cả file đã chọn |
+| Lỗi validate, `4xx` (gồm `429`), `5xx`, lỗi mạng | Form giữ nguyên trong bộ nhớ, kể cả file đã chọn |
 | Token hết hạn lúc gửi `PUT` hoặc lúc gọi `GET` làm mới ảnh khi form đang sửa | Text còn lại, **file bị mất**. Sau khi đăng nhập lại về `/profile`, form khôi phục text và báo: "Đã giữ lại thông tin bạn nhập. Vui lòng chọn lại ảnh." |
 
 Cách làm: **trước mỗi request** từ `/profile` khi form có thay đổi, ghi `{ userId, displayName, heightCm, weightKg, hadPhoto }` vào `sessionStorage` key `tryon_profile_draft` (ghi trước để không phụ thuộc thứ tự redirect). Xoá khi request kết thúc không phải vì hết phiên, khi logout, hoặc sau khi khôi phục. Chỉ khôi phục khi `userId` khớp hồ sơ vừa tải; không khớp thì xoá (máy dùng chung). `sessionStorage` chỉ sống trong tab nên số đo không tồn tại lâu dài trên máy. File không lưu được vào `sessionStorage`, và IndexedDB là quá mức cần cho tình huống hiếm này.

@@ -100,15 +100,17 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Chốt các quyết định cho Task 4–7 trước khi code. Giao agent-ba.
 
 **Công việc:**
-- [ ] Chốt ngưỡng rate limit, mã lỗi và thông báo `429`
-- [ ] Chốt cách loại metadata ảnh và xử lý file hỏng
-- [ ] Chốt thứ tự xác thực và parse body
-- [ ] Thêm quyết định D20 trở đi vào `design/PRD.md`, cập nhật API contract và mục 7
-- [ ] Cập nhật `design/flows/profile.md`, `design/flows/upload-body-photo.md`
+- [x] Chốt ngưỡng rate limit, mã lỗi và thông báo `429`
+- [x] Chốt cách loại metadata ảnh và xử lý file hỏng
+- [x] Chốt thứ tự xác thực và parse body
+- [x] Thêm quyết định D20 trở đi vào `design/PRD.md`, cập nhật API contract và mục 7
+- [x] Cập nhật `design/flows/profile.md`, `design/flows/upload-body-photo.md`
 
 **Acceptance Criteria:**
 - PRD, flows và schema không mâu thuẫn nhau
 - Người dùng review và chốt trước khi code Task 4, 6, 7
+
+**Kết quả (2026-11-02):** người dùng đã chốt D20–D30 trong `design/PRD.md`. Hành vi `sharp` và middleware đã thử trên ảnh tổng hợp và app mô phỏng, chưa thử với ảnh điện thoại thật và chưa cài vào code; Task 7 phải thử ảnh thật. Task 5 chưa được chốt ở đây.
 
 ---
 
@@ -116,13 +118,15 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** `express.json` đang chạy trước `requireAuth`, lệch thứ tự ở PRD 4.4. Giao agent-coder.
 
 **Công việc:**
-- [ ] Đưa `express.json` xuống các route cần nó
+- [ ] Bỏ `express.json` khỏi `app.js`, gắn bằng `router.use` đầu `auth.routes.js` (D20)
+- [ ] Bỏ cờ `todo` của 4 case trong `backend/test/profile.http.test.js`
 - [ ] Thêm test cho các trường hợp bên dưới
 
 **Acceptance Criteria:**
 - `PUT /api/user/profile` không token, kèm JSON hỏng hoặc body trên 1 MB, trả `401`
 - `PUT /api/user/profile` có token, `Content-Type: application/json`, body hỏng hoặc trên 1 MB, trả `415` (phát hiện ở Task 1)
 - `/api/auth/*` vẫn trả lỗi JSON như trước
+- Route không tồn tại ngoài `/api/auth/*`, kèm JSON hỏng, trả `404`
 
 ---
 
@@ -145,14 +149,15 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 
 **Công việc:**
 - [ ] Cài `express-rate-limit`
-- [ ] Đặt limiter sau `requireAuth` và trước multer, tính theo user
+- [ ] Đặt limiter sau `requireAuth`, `requireMultipart` và trước multer, tính theo user, 20 request mỗi 10 phút (D21, D22)
 - [ ] Trả `429` theo format lỗi chung
-- [ ] Hiện thông báo tiếng Việt trên UI
+- [ ] Kiểm tra UI hiện thông báo tiếng Việt (đọc code thấy `ProfilePage` đã hiện `err.message`, sửa nếu chạy thử không đúng)
 
 **Acceptance Criteria:**
 - Vượt ngưỡng trả `429` đúng format lỗi chung
 - Request trong ngưỡng không bị ảnh hưởng
 - Request bị chặn không đi tới multer
+- Request `415` không bị đếm; request thất bại có bị đếm
 - UI hiện thông báo tiếng Việt và giữ nguyên dữ liệu form
 
 ---
@@ -164,13 +169,19 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - [ ] Cài `sharp`
 - [ ] Áp hướng xoay EXIF vào ảnh rồi mới bỏ metadata, trước khi upload
 - [ ] Xử lý file đúng magic bytes nhưng không giải mã được
-- [ ] Thêm test với ảnh có EXIF GPS và ảnh chụp xoay
+- [ ] Xử lý mỗi process một ảnh tại một thời điểm (D29)
+- [ ] Thêm test với ảnh có EXIF GPS và ảnh chụp xoay, sinh bằng `sharp` (`jpegBuffer` trong test chỉ có magic bytes)
+- [ ] Thử với ảnh điện thoại thật, gồm kiểm tra `failOn: 'warning'` có từ chối nhầm không
 
 **Acceptance Criteria:**
 - Ảnh trong Storage không còn EXIF/GPS
 - Ảnh hiển thị đúng chiều sau khi lưu
 - File đúng magic bytes nhưng hỏng trả `400 INVALID_FILE_TYPE`
 - D10 vẫn đúng: lỗi xử lý ảnh thì không ghi field nào
+- Ảnh quá 70 triệu pixel, hoặc vẫn trên 5 MB sau encode lần 2, trả `413 FILE_TOO_LARGE` (D26, D27)
+- Ảnh gần 5 MB lớn lên khi encode không gây `500`
+- Ảnh được xử lý tuần tự trong mỗi process (D29)
+- Đã thử với ảnh điện thoại thật
 
 ---
 
@@ -203,6 +214,9 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 
 ## Backlog cho sprint sau
 - **Epic 2 (US-03, US-04):** dự kiến cho Sprint 3.
+- **Kiểm tra bucket trước deploy (ưu tiên cao, làm trước khi deploy, D30):** ngày 2026-11-02 `body-photos` có 0 object. **Acceptance Criteria:** trước khi deploy, bucket không còn ảnh test và không còn ảnh giữ EXIF/GPS.
+- **Store rate limit dùng chung (làm trước khi chạy nhiều instance, D24):** **Acceptance Criteria:** ngưỡng 20 request mỗi 10 phút đúng trên toàn bộ instance và không mất khi restart.
+- **Giới hạn độ dài hàng đợi xử lý ảnh (ưu tiên thấp, D29):** **Acceptance Criteria:** có số liệu thật về độ dài hàng đợi; hàng đợi đầy thì trả lỗi rõ ràng thay vì chờ tới timeout.
 - **Rate limit `/api/auth/*` (ưu tiên cao, làm trước khi deploy):** thuộc US-01, xem `sprints/sprint1.md`.
 - **Các mục còn lại trong backlog của `sprints/sprint1.md`:** footer, validate email, lỗi JSON ở login (US-01); chuẩn hoá line ending.
 - **Các mục trong `design/PRD.md` mục 7:** xoá ảnh và xoá tài khoản (cần user story mới), CSP/`helmet`, thu hồi token, dọn object mồ côi.

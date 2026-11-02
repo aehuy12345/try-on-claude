@@ -35,4 +35,5 @@ Nhật ký lỗi đã gặp và cách sửa, nhóm theo loại. Đọc trước 
 ## Bàn giao subagent
 
 - **Báo cáo của subagent có thể sai so với tài liệu** (Sprint 1 – Task 7). agent-uiux báo PRD chưa quy định định dạng số và dùng regex riêng, trong khi PRD mục 3 đã có `^d{1,3}(.d+)?$`. **Sửa:** đổi validate client theo PRD. **Bài học:** đối chiếu báo cáo với tài liệu và code, không tin tóm tắt.
+- **Script thay chuỗi của subagent sửa nhầm dòng trong tài liệu** (Sprint 2 – Task 3). agent-ba sửa `screens.md` bằng script; một lệnh `replace` không khớp nên dòng `INVALID_UPLOAD`, `UPLOAD_FAILED` bị đổi nhãn thành `500 INTERNAL_ERROR`, báo cáo không nhắc tới. Agent chính phát hiện khi đọc `git diff`. **Sửa:** khôi phục nhãn gốc, rà lại mọi dòng bị xoá trong diff. **Bài học:** script thay chuỗi phải báo lỗi khi số lần khớp khác 1; khi validate phải đọc diff, không chỉ `grep` dòng mới thêm.
 - **Subagent test trên trình duyệt làm ảnh hưởng môi trường của người dùng** (Sprint 1 – Task 7). agent-coder gọi `localStorage.clear()` trên `localhost:5173` và dừng cả các `npm run dev` đã chạy từ trước. **Bài học:** khi giao việc phải ghi rõ chỉ dừng tiến trình tự bật và chỉ xoá đúng key đã tạo.
