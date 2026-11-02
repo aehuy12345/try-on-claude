@@ -20,6 +20,12 @@ Nhật ký lỗi đã gặp và cách sửa, nhóm theo loại. Đọc trước 
 - **Kết luận về `main` từ branch local chưa cập nhật** (Sprint 1 – Task 7). Xem `main` local nên báo sai là chưa có code US-01, trong khi remote đã có Task 5 qua pull request #1. **Sửa:** `git fetch` rồi so với `origin/main` trước khi kết luận. **Bài học:** luôn fetch trước khi nhận định về trạng thái branch.
 - **Dừng background task trên Windows không dừng process con** (Sprint 1 – Task 7). Sau khi dừng task `npm start` và `npm run dev`, `node` vẫn giữ cổng 4000 và 5173. **Sửa:** tìm PID qua `netstat -ano`, đối chiếu lệnh và thời điểm tạo rồi `Stop-Process` đúng PID đó. **Bài học:** kiểm tra cổng đã trống rồi mới báo server đã dừng.
 
+## Kiểm thử
+
+- **Script dọn dữ liệu test lỗi nhưng lệnh sau vẫn xoá file thông tin tài khoản** (Sprint 2 – Task 1). Bước thử phụ đứng trước bước xoá làm script dừng, còn `rm` chạy vô điều kiện nên mất file ghi tài khoản QA, dữ liệu test vẫn nằm trên Supabase. **Sửa:** tìm lại theo mẫu email đã tạo, liệt kê trước rồi mới xoá, kiểm tra số dòng trước và sau. **Bài học:** dọn dữ liệu là một bước riêng, chỉ xoá file ghi nhận sau khi xác nhận đã dọn xong (nối bằng `&&`).
+- **Instance test thiếu biến môi trường của phần giả lập lỗi** (Sprint 2 – Task 1). Instance cổng 4101 không có `QA_FLAGS_DIR` nên không giả lập lỗi: request thành công và script đọc `error` bị crash. **Bài học:** kiểm tra lỗi giả lập có thực sự xảy ra trước khi dựa vào kết quả, và không gộp thử nghiệm phụ vào script dọn dữ liệu.
+- **Claude in Chrome không mở được localhost** (Sprint 2 – Task 1). Tiện ích mở được trang ngoài nhưng báo trang lỗi với mọi địa chỉ localhost, trong khi `curl` gọi được, chưa rõ nguyên nhân. **Sửa:** chạy Chrome headless với `--user-data-dir` tạm, điều khiển qua DevTools Protocol, cổng và JWT secret riêng nên không ảnh hưởng phiên của người dùng. **Bài học:** thử vài lần rồi đổi cách, không lặp lại, và ghi rõ trong báo cáo đã test bằng cách nào.
+
 ## Giao diện
 
 - **`<img onError>` gọi lại API có thể lặp vô hạn** (Sprint 1 – Task 7). URL mới vẫn hỏng thì `onError` lại gọi tiếp. **Sửa:** dùng ref giới hạn một lần làm mới cho mỗi lượt hỏng, sau đó hiện ô lỗi kèm Thử lại. **Bài học:** mọi retry tự động phải có giới hạn.

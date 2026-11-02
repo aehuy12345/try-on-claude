@@ -4,7 +4,7 @@ Kiểm chứng US-02 trên app thật và xử lý các phần còn yếu về b
 User Stories: US-02
 
 ## Đối chiếu US-02
-US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập từ việc đọc code và tài liệu, **chưa chạy thử**; Task 1 sẽ kiểm chứng trên app thật.
+US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập từ việc đọc code và tài liệu, **chưa chạy thử**; kết quả chạy thật nằm ở Task 1.
 
 | Yêu cầu US-02 | Hiện trạng | Xử lý |
 |---------------|-----------|-------|
@@ -24,16 +24,56 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Chạy từng acceptance criteria và luồng lỗi của `US-02.md` trên trình duyệt và API. Agent chính thực hiện.
 
 **Công việc:**
-- [ ] Kiểm tra từng acceptance criteria của US-02
-- [ ] Kiểm tra từng luồng lỗi, gồm token hết hạn và lỗi Storage/mạng
-- [ ] Kiểm tra màn hình 360 px và desktop
-- [ ] Kiểm tra CORS bằng một origin lạ
-- [ ] Thêm lỗi phát hiện được vào sprint này trước khi sửa
+- [x] Kiểm tra từng acceptance criteria của US-02
+- [x] Kiểm tra từng luồng lỗi, gồm token hết hạn và lỗi Storage/mạng
+- [x] Kiểm tra màn hình 360 px và desktop
+- [x] Kiểm tra CORS bằng một origin lạ
+- [x] Thêm lỗi phát hiện được vào sprint này trước khi sửa
 
 **Acceptance Criteria:**
 - Có bảng kết quả theo từng acceptance criteria và luồng lỗi, ghi đạt/không đạt
 - Mục nào không kiểm tra được thì ghi rõ lý do
 - Mỗi lỗi phát hiện được có task kèm acceptance criteria trong sprint này hoặc backlog
+
+**Kết quả (2026-11-02):** 142 kiểm tra tự động (91 API, 51 giao diện) và một lượt đăng nhập lại thật. Không đạt 5 mục, đều đã có task hoặc backlog ở cột Xử lý.
+
+**Cách chạy:** backend cổng 4100 và frontend cổng 5199 nối project Supabase thật, JWT secret tạm, `NODE_ENV=production`. Lỗi Storage, DB và URL ký được giả lập bằng cách chặn lời gọi ra ngoài của instance test, không sửa code app. Giao diện chạy trên Chrome headless với hồ sơ tạm. Hai tài khoản QA và ảnh của chúng đã được xoá sau khi test (`profiles` từ 5 về 3 dòng).
+
+| Yêu cầu US-02 | Kết quả | Bằng chứng | Xử lý |
+|---------------|---------|-----------|-------|
+| **Acceptance criteria** | | | |
+| Chỉ người đã đăng nhập truy cập/ghi hồ sơ | **Không đạt một phần** | GET/PUT không token trả `401`, `/profile` chuyển `/login`. Riêng PUT không token kèm JSON hỏng trả `400`, JSON trên 1 MB trả `413` | Task 4 |
+| Xem hồ sơ hiện tại | Đạt | Đủ field, email chỉ đọc, không lộ `password_hash` hay path, `Cache-Control: no-store` | |
+| Cập nhật chiều cao/cân nặng, hiện lỗi validate | Đạt | Biên 100/250 và 30/250, lỗi dưới ô, không gửi request khi sai, tải lại vẫn còn dữ liệu | |
+| Upload ảnh, lưu vào Storage | Đạt | Tải về đúng byte qua URL ký; DB chỉ lưu path; URL public và URL không có auth không tải được | Task 8 sửa câu chữ US-02 |
+| Ảnh mới thay ảnh cũ | **Không đạt một phần** | Hồ sơ và object được thay đúng, nhưng URL ký cũ vẫn trả `200` kèm `cf-cache-status: HIT` | Task 5 |
+| Thông báo nhất quán, không lộ thông tin hệ thống | Đạt | Thông báo tiếng Việt, không có chi tiết lỗi ở response (production), UI và console. Ngoài production response `500` có `stack` theo PRD mục 4, xem dòng "Chưa kiểm tra" | |
+| **Luồng lỗi** | | | |
+| Token hết hạn | Đạt | `401 TOKEN_EXPIRED`; về `/login` kèm banner, xoá token; đăng nhập lại về `/profile`; số đo đang nhập được khôi phục và có nhắc chọn lại ảnh | |
+| Token không hợp lệ | Đạt | Sai chữ ký, `alg: none`, `sub` không phải UUID, không có `sub`, UUID không tồn tại đều trả `401 TOKEN_INVALID` | |
+| Sai loại file | Đạt | PDF, TXT, GIF, WEBP, file rỗng, text giả PNG bị từ chối; loại file lấy từ magic bytes | |
+| Quá dung lượng | Đạt | Đúng 5 242 880 byte được nhận, thêm 1 byte trả `413`; client chặn trước | |
+| Sai ratio/kích thước | Đạt | Ảnh nhỏ và ảnh ngang có cảnh báo mềm, vẫn lưu được; 3:4 và 9:16 không cảnh báo; luôn có hướng dẫn | |
+| Số đo sai | Đạt | Thiếu, chữ, `1e2`, số âm, ngoài khoảng đều báo lỗi; `170,5` ở form được đổi thành `170.5` | |
+| Lỗi Storage | Đạt | `500 UPLOAD_FAILED`, không ghi field nào (D10), form và ảnh giữ nguyên | |
+| Lỗi DB khi ghi | Đạt | Thông báo chung, object vừa upload được xoá | |
+| Mất mạng | Đạt | Giữ form, báo lỗi; lưu lại thành công khi có mạng; lỗi tải hồ sơ có nút Thử lại | |
+| Không tải được ảnh | Đạt | Làm mới có giới hạn, rồi hiện "Không tải được ảnh" và Thử lại | |
+| Không tạo được URL ký lúc mở trang | **Không đạt về trải nghiệm** | Hồ sơ có ảnh nhưng hiện "Chưa có ảnh toàn thân". Đúng với `screens.md`, đây là hạn chế đã ghi | Backlog |
+| Thứ tự lỗi (PRD 4.4) | **Không đạt một phần** | Thứ tự field và file đúng. PUT có token, `Content-Type: application/json`, body hỏng trả `400 INVALID_JSON` thay vì `415` | Task 4 |
+| **Phi chức năng** | | | |
+| Bảo mật, không log dữ liệu nhạy cảm | Đạt phần đã kiểm tra | Log backend và console không có token, URL ký, email | Task 6, 7, 9 |
+| Xoá ảnh cũ lỗi | Đạt, có rủi ro | Lưu vẫn thành công nhưng ảnh cũ nằm lại Storage, không còn được tham chiếu | Backlog |
+| CORS | Đạt | `http://evil.example`, `null` và cổng khác không có `Access-Control-Allow-Origin`; Chrome ở origin lạ bị chặn; cấu hình `.env` thật cũng đúng | |
+| Mạng yếu | Đạt | Nút khoá, "Đang lưu...", không gửi trùng; server treo thì hết hạn sau 60 s và giữ form | |
+| 360 px, desktop 1280 px | Đạt | Không tràn ngang ở trạng thái thường, có lỗi, sau khi lưu; vùng bấm từ 44 px; lưu kèm ảnh được | |
+
+**Chưa kiểm tra và lý do:**
+- **Điện thoại thật:** 360 px chạy bằng giả lập của Chrome.
+- **Tiện ích Claude in Chrome:** tiện ích mở được trang ngoài nhưng báo trang lỗi với mọi địa chỉ localhost, chưa rõ nguyên nhân, nên phải dùng Chrome headless.
+- **Token hết hạn tự nhiên sau 24 giờ:** dùng token có `exp` trong quá khứ; lượt đăng nhập lại xác nhận TTL là 86 400 giây.
+- **Sự cố thật của Storage/DB:** chỉ giả lập ở lời gọi ra ngoài của backend.
+- **`stack` trong response `500` ngoài production:** lượt thử bị hỏng do thiếu cấu hình giả lập lỗi, chỉ đối chiếu code và PRD mục 4.
 
 ---
 
@@ -79,12 +119,13 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 
 **Acceptance Criteria:**
 - `PUT /api/user/profile` không token, kèm JSON hỏng hoặc body trên 1 MB, trả `401`
+- `PUT /api/user/profile` có token, `Content-Type: application/json`, body hỏng hoặc trên 1 MB, trả `415` (phát hiện ở Task 1)
 - `/api/auth/*` vẫn trả lỗi JSON như trước
 
 ---
 
 ### 5. URL ký của ảnh đã thay (Priority: Medium)
-**Mô tả:** Khi test Task 7 của Sprint 1, URL ký của ảnh đã xoá vẫn trả `200` (nghi do cache CDN, chưa xác nhận), có thể tới hết TTL 1 giờ. agent-ba điều tra, agent-coder sửa nếu cần.
+**Mô tả:** Khi test Task 7 của Sprint 1, URL ký của ảnh đã xoá vẫn trả `200` (nghi do cache CDN; Task 1 tái hiện được và response có `cf-cache-status: HIT`, chưa kết luận nguyên nhân), có thể tới hết TTL 1 giờ. agent-ba điều tra, agent-coder sửa nếu cần.
 
 **Công việc:**
 - [ ] Tái hiện và xác định nguyên nhân
@@ -164,6 +205,9 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - **Các mục còn lại trong backlog của `sprints/sprint1.md`:** footer, validate email, lỗi JSON ở login (US-01); chuẩn hoá line ending.
 - **Các mục trong `design/PRD.md` mục 7:** xoá ảnh và xoá tài khoản (cần user story mới), CSP/`helmet`, thu hồi token, dọn object mồ côi.
 - **Kiểm tra kích thước ảnh ở server:** xem lại ở US-05.
+- **Phân biệt "chưa có ảnh" với "không tạo được URL ký" (ưu tiên thấp, phát hiện ở Task 1):** lỗi tạm thời của Storage khiến người đã có ảnh thấy "Chưa có ảnh toàn thân". **Acceptance Criteria:** hồ sơ có path nhưng không tạo được URL thì hiện "Không tải được ảnh" kèm Thử lại; hồ sơ chưa có path vẫn hiện "Chưa có ảnh toàn thân"; API không trả path; cập nhật PRD 4.3, `screens.md`, flow ảnh.
+- **Ảnh cũ nằm lại khi xoá lỗi (ưu tiên trung bình, phát hiện ở Task 1):** thay ảnh mà bước xoá ảnh cũ lỗi thì ảnh riêng tư còn trong Storage, PRD mục 7 chưa nêu trường hợp này. **Acceptance Criteria:** PRD mục 7 ghi trường hợp này; job dọn object mồ côi xoá được các ảnh không còn được tham chiếu.
+- **Health check trả `503` một lần (ưu tiên thấp, phát hiện ở Task 1):** `GET /api/health` trả `503` một lần ngay sau khi instance test khởi động, lần gọi kế tiếp trả `200`; 3 lần gọi trên instance khởi động sau đó đều `200`. Chưa rõ nguyên nhân, response không ghi lý do. **Acceptance Criteria:** tái hiện và xác định được nguyên nhân, hoặc ghi nhận không tái hiện được sau khi thử lại nhiều lần khởi động.
 
 ## Definition of Done
 - Code được review
