@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/playfair-display';
+
+/* Design tokens: xem design/design-system.md */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Playfair Display Variable', ui-serif, Georgia, serif;
+
+  /* Brand: wine / burgundy */
+  --color-brand-50: #fbf1f4;
+  --color-brand-100: #f5dce3;
+  --color-brand-200: #ebb9c7;
+  --color-brand-300: #dd8ba1;
+  --color-brand-400: #c85d78;
+  --color-brand-500: #a83a58;
+  --color-brand-600: #8b2644;
+  --color-brand-700: #721e38;
+  --color-brand-800: #5a182d;
+  --color-brand-900: #3d101f;
+
+  /* Ink: warm neutrals */
+  --color-ink-50: #f7f5f2;
+  --color-ink-100: #ece8e3;
+  --color-ink-200: #d9d3cc;
+  --color-ink-300: #b9b1a8;
+  --color-ink-400: #8f867c;
+  --color-ink-500: #6b635a;
+  --color-ink-600: #544d46;
+  --color-ink-700: #3c3732;
+  --color-ink-800: #26231f;
+  --color-ink-900: #171512;
+
+  /* Surfaces */
+  --color-canvas: #faf7f2;
+  --color-sand: #f1e9df;
+  --color-blush: #f6e4e1;
+
+  /* Accent: champagne gold */
+  --color-gold-300: #e4cd9a;
+  --color-gold-500: #c19a4b;
+  --color-gold-700: #8a6a24;
+
+  /* Feedback */
+  --color-success: #1f7a4d;
+  --color-warning: #9a5b00;
+  --color-danger: #b42318;
+
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(23 21 18 / 0.05), 0 8px 24px -8px rgb(23 21 18 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(23 21 18 / 0.06), 0 24px 48px -16px rgb(60 16 31 / 0.28);
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
