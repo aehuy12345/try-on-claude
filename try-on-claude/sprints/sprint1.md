@@ -96,16 +96,16 @@ User Stories: US-01, US-02
 **Mô tả:** Xây dựng chức năng đăng ký tài khoản mới dựa trên flow đã chốt
 
 **Công việc:**
-- [ ] Tạo API endpoint đăng ký (POST /api/auth/register)
-- [ ] Validate dữ liệu đầu vào (email, password, etc.)
-- [ ] Hash password trước khi lưu
-- [ ] Tạo UI form đăng ký
-- [ ] Kết nối frontend với API đăng ký
-- [ ] Xử lý error và success messages
-- [ ] Email validation và unique check
-- [ ] Bổ sung màn hình `/register` vào `design/screens.md` (agent-uiux)
-- [ ] Tạo `AuthContext` (token, cờ `justRegistered`) và `GuestRoute` theo `design/flows/logout-protected-routes.md` (chuyển từ Task 6 sang, vì đăng ký xong tự đăng nhập, D1)
-- [ ] Tạo trang `/profile` tạm để đăng ký xong không rơi vào 404; Task 7 thay bằng trang thật
+- [x] Tạo API endpoint đăng ký (POST /api/auth/register)
+- [x] Validate dữ liệu đầu vào (email, password, etc.)
+- [x] Hash password trước khi lưu
+- [x] Tạo UI form đăng ký
+- [x] Kết nối frontend với API đăng ký
+- [x] Xử lý error và success messages
+- [x] Email validation và unique check
+- [x] Bổ sung màn hình `/register` vào `design/screens.md` (agent-uiux)
+- [x] Tạo `AuthContext` (token, cờ `justRegistered`) và `GuestRoute` theo `design/flows/logout-protected-routes.md` (chuyển từ Task 6 sang, vì đăng ký xong tự đăng nhập, D1)
+- [x] Tạo trang `/profile` tạm để đăng ký xong không rơi vào 404; Task 7 thay bằng trang thật
 
 **Acceptance Criteria:**
 - User có thể đăng ký tài khoản mới
@@ -171,6 +171,8 @@ User Stories: US-01, US-02
 
 ## Backlog cho sprint sau
 - **Rate limit (ưu tiên cao, làm trước khi deploy):** dùng `express-rate-limit` cho `/api/auth/*` và `PUT /api/user/profile`. **Acceptance Criteria:** vượt ngưỡng trả `429` theo format lỗi chung; request trong ngưỡng không bị ảnh hưởng.
+- **Đồng bộ validate email client và server (ưu tiên thấp):** server chặn thêm U+0085 và NUL, `frontend/src/lib/validateRegister.js` chưa chặn. **Acceptance Criteria:** hai bên cùng từ chối các ký tự này; client báo "Email không hợp lệ." mà không gửi request.
+- **Chuẩn hoá line ending (ưu tiên thấp):** `npm run format` và `prettier --check` báo lệch trên nhiều file do CRLF/`autocrlf` trên Windows. **Acceptance Criteria:** có `.gitattributes` hoặc cấu hình Prettier thống nhất; `prettier --check` sạch ở `backend` và `frontend`; `git status` không còn file sửa chỉ do line ending.
 
 ## Definition of Done
 - Code được review
