@@ -39,7 +39,7 @@ Node >= 20. Cài dependency: `npm install` trong từng thư mục. Cần `backe
 - `npm run build` / `npm run preview`
 - `npm run lint` / `npm run format`
 
-**Test:** hiện chưa có test runner (chưa cài). Bổ sung khi có test đầu tiên.
+**Test (backend):** `cd backend && npm test` (`node:test` có sẵn trong Node, không cài thêm thư viện). Test nằm ở `backend/test/`, chạy offline: `test/setup.js` đặt biến môi trường giả và chặn mọi `fetch` ra ngoài trước khi nạp app, không đọc `backend/.env`, không chạm Supabase thật. Thêm file test mới thì khai báo đường dẫn vào script `test` trong `backend/package.json` (không dùng glob vì Node 20 không mở rộng glob). Frontend chưa có test.
 
 **Migration Supabase:** chạy các file SQL trong `migrations/` theo thứ tự đánh số qua Supabase Dashboard → SQL Editor, hoặc bằng Supabase CLI (`supabase db push` / `supabase db execute`).
 

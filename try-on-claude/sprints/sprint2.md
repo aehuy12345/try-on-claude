@@ -81,16 +81,18 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Backend chưa có test. Dùng `node:test` nên không phải cài test runner. Giao agent-coder.
 
 **Công việc:**
-- [ ] Thêm script `npm test` ở backend
-- [ ] Test `profile.validator` (biên chiều cao, cân nặng, tên hiển thị, loại file)
-- [ ] Test thứ tự lỗi của `PUT /api/user/profile` theo PRD 4.4
-- [ ] Test token ký đúng nhưng nội dung lạ (`sub` không phải UUID)
-- [ ] Cập nhật mục Commands trong `CLAUDE.md`
+- [x] Thêm script `npm test` ở backend
+- [x] Test `profile.validator` (biên chiều cao, cân nặng, tên hiển thị, loại file)
+- [x] Test thứ tự lỗi của `PUT /api/user/profile` theo PRD 4.4
+- [x] Test token ký đúng nhưng nội dung lạ (`sub` không phải UUID)
+- [x] Cập nhật mục Commands trong `CLAUDE.md`
 
 **Acceptance Criteria:**
 - `npm test` pass khi không có kết nối Supabase thật
 - Test không đọc hoặc ghi dữ liệu trên project Supabase
 - `CLAUDE.md` ghi đúng lệnh chạy test
+
+**Kết quả (2026-11-02):** `npm test` trên Node 24: 93 pass, 0 fail, 4 todo. 4 case todo là hành vi đúng mà Task 4 phải đạt; Task 4 bỏ cờ `todo` khi sửa xong. Chạy được khi không có `backend/.env`; với `.env` giả có giá trị riêng, app vẫn dùng cấu hình giả của test. Không chạy được trên Node 20, xem [Backlog cho sprint sau](#backlog-cho-sprint-sau).
 
 ---
 
@@ -208,6 +210,7 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - **Phân biệt "chưa có ảnh" với "không tạo được URL ký" (ưu tiên thấp, phát hiện ở Task 1):** lỗi tạm thời của Storage khiến người đã có ảnh thấy "Chưa có ảnh toàn thân". **Acceptance Criteria:** hồ sơ có path nhưng không tạo được URL thì hiện "Không tải được ảnh" kèm Thử lại; hồ sơ chưa có path vẫn hiện "Chưa có ảnh toàn thân"; API không trả path; cập nhật PRD 4.3, `screens.md`, flow ảnh.
 - **Ảnh cũ nằm lại khi xoá lỗi (ưu tiên trung bình, phát hiện ở Task 1):** thay ảnh mà bước xoá ảnh cũ lỗi thì ảnh riêng tư còn trong Storage, PRD mục 7 chưa nêu trường hợp này. **Acceptance Criteria:** PRD mục 7 ghi trường hợp này; job dọn object mồ côi xoá được các ảnh không còn được tham chiếu.
 - **Health check trả `503` một lần (ưu tiên thấp, phát hiện ở Task 1):** `GET /api/health` trả `503` một lần ngay sau khi instance test khởi động, lần gọi kế tiếp trả `200`; 3 lần gọi trên instance khởi động sau đó đều `200`. Chưa rõ nguyên nhân, response không ghi lý do. **Acceptance Criteria:** tái hiện và xác định được nguyên nhân, hoặc ghi nhận không tái hiện được sau khi thử lại nhiều lần khởi động.
+- **Yêu cầu Node sai (ưu tiên cao, làm trước khi deploy, phát hiện ở Task 2):** `engines`, `CLAUDE.md` ghi Node >= 20, nhưng `@supabase/supabase-js` đã cài yêu cầu Node >= 22. Trên Node 20.20.2 app crash ngay lúc nạp `config/supabase.js` ("native WebSocket not found"), `npm test` cũng lỗi. **Acceptance Criteria:** `engines`, `CLAUDE.md`, README ghi cùng một phiên bản Node tối thiểu; backend khởi động và `npm test` pass trên đúng phiên bản đó.
 
 ## Definition of Done
 - Code được review

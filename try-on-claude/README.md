@@ -75,7 +75,13 @@ cd backend  && npm run lint && npm run format
 cd frontend && npm run lint && npm run format && npm run build
 ```
 
-Hiện chưa có test runner.
+Test backend (`node:test`, chạy offline, không cần `.env` và không chạm Supabase):
+
+```bash
+cd backend && npm test
+```
+
+Frontend chưa có test.
 
 ## Cấu trúc repo
 
