@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import Button from '../ui/Button.jsx';
 import Logo from '../ui/Logo.jsx';
+import { useAuth } from '../../context/useAuth.js';
 
 const NAV_LINKS = [
   { href: '/#features', label: 'Tính năng' },
@@ -8,6 +10,8 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -26,6 +30,14 @@ export default function Header() {
   }, [open]);
 
   const close = () => setOpen(false);
+
+  // Navigate first: clearing the token on a protected page would redirect to /login instead of /.
+  // flushSync is required: without it the navigate promise resolves before React commits the new route.
+  const handleLogout = async () => {
+    close();
+    await navigate('/', { replace: true, flushSync: true });
+    logout();
+  };
 
   return (
     <header
@@ -51,10 +63,23 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button to="/login" variant="ghost">
-            Đăng nhập
-          </Button>
-          <Button to="/register">Đăng ký</Button>
+          {isAuthenticated ? (
+            <>
+              <Button to="/profile" variant="ghost">
+                Hồ sơ
+              </Button>
+              <Button variant="secondary" onClick={handleLogout}>
+                Đăng xuất
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button to="/login" variant="ghost">
+                Đăng nhập
+              </Button>
+              <Button to="/register">Đăng ký</Button>
+            </>
+          )}
         </div>
 
         <button
@@ -94,12 +119,23 @@ export default function Header() {
           ))}
         </nav>
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <Button to="/login" variant="secondary" onClick={close}>
-            Đăng nhập
-          </Button>
-          <Button to="/register" onClick={close}>
-            Đăng ký
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button to="/profile" variant="secondary" onClick={close}>
+                Hồ sơ
+              </Button>
+              <Button onClick={handleLogout}>Đăng xuất</Button>
+            </>
+          ) : (
+            <>
+              <Button to="/login" variant="secondary" onClick={close}>
+                Đăng nhập
+              </Button>
+              <Button to="/register" onClick={close}>
+                Đăng ký
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

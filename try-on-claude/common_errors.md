@@ -6,6 +6,8 @@ Nhật ký lỗi đã gặp và cách sửa, nhóm theo loại. Đọc trước 
 
 - **supabase-js: `storage.listBuckets()` không có `.abortSignal()`** (Sprint 1 – Task 1). Gọi `.abortSignal()` làm health check luôn lỗi "is not a function". **Sửa:** tự làm timeout bằng `Promise.race` với một promise `setTimeout`, nhớ `clearTimeout` trong `finally`. **Bài học:** tra Context7 xem method nào hỗ trợ `abortSignal`, đừng đoán.
 
+- **React Router: `await navigate()` resolve trước khi React commit route mới** (Sprint 1 – Task 6). Logout gọi `await navigate('/', { replace: true })` rồi xoá token: `ProtectedRoute` còn mounted với location cũ nên render `<Navigate to="/login">`, người dùng rơi vào `/login` thay vì `/`. **Sửa:** `navigate('/', { replace: true, flushSync: true })`. **Bài học:** type definitions và docs chỉ cho biết API tồn tại, không chứng minh thứ tự render; luồng điều hướng phải chạy thử trên trình duyệt trước khi bàn giao.
+
 ## Bảo mật
 
 - **`cors({ origin: 'http://...' })` trả `Access-Control-Allow-Origin` cho mọi origin** (Sprint 1 – Task 1). **Sửa:** dùng origin function `cors({ origin: (origin, cb) => cb(null, origin === env.clientUrl) })`. **Bài học:** luôn test CORS bằng một origin lạ (vd `curl -H "Origin: http://evil.example"`); response không được có header `Access-Control-Allow-Origin`.

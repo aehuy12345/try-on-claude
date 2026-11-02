@@ -1,6 +1,7 @@
 const TONES = {
   danger: 'border-danger/30 bg-danger/5 text-danger',
   success: 'border-success/30 bg-success/5 text-success',
+  warning: 'border-warning/30 bg-warning/5 text-warning',
 };
 
 /**

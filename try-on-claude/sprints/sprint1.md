@@ -121,18 +121,18 @@ User Stories: US-01, US-02
 **Mô tả:** Xây dựng chức năng đăng nhập
 
 **Công việc:**
-- [ ] Tạo API endpoint đăng nhập (POST /api/auth/login)
-- [ ] Verify email và password
-- [ ] Generate JWT token khi đăng nhập thành công
-- [ ] Tạo UI form đăng nhập
-- [ ] Kết nối frontend với API đăng nhập
-- [ ] Lưu JWT token (localStorage/cookie)
-- [ ] Implement logout functionality
-- [ ] Protected routes setup
-- [ ] Xử lý error messages
-- [ ] Bổ sung màn hình `/login` vào `design/screens.md`, đổi header khi đã đăng nhập thành "Hồ sơ" và "Đăng xuất" (agent-uiux)
-- [ ] Đổi `JWT_EXPIRES_IN` thành `24h` trong `backend/.env.example` và `backend/.env` (D6)
-- [ ] Xử lý 401 toàn cục trong `apiClient.js` theo `code`, sửa comment "callers decide" (D18)
+- [x] Tạo API endpoint đăng nhập (POST /api/auth/login)
+- [x] Verify email và password
+- [x] Generate JWT token khi đăng nhập thành công
+- [x] Tạo UI form đăng nhập
+- [x] Kết nối frontend với API đăng nhập
+- [x] Lưu JWT token (localStorage/cookie)
+- [x] Implement logout functionality
+- [x] Protected routes setup
+- [x] Xử lý error messages
+- [x] Bổ sung màn hình `/login` vào `design/screens.md`, đổi header khi đã đăng nhập thành "Hồ sơ" và "Đăng xuất" (agent-uiux)
+- [x] Đổi `JWT_EXPIRES_IN` thành `24h` trong `backend/.env.example` và `backend/.env` (D6)
+- [x] Xử lý 401 toàn cục trong `apiClient.js` theo `code`, sửa comment "callers decide" (D18)
 
 **Acceptance Criteria:**
 - User có thể đăng nhập với email/password
@@ -171,7 +171,10 @@ User Stories: US-01, US-02
 
 ## Backlog cho sprint sau
 - **Rate limit (ưu tiên cao, làm trước khi deploy):** dùng `express-rate-limit` cho `/api/auth/*` và `PUT /api/user/profile`. **Acceptance Criteria:** vượt ngưỡng trả `429` theo format lỗi chung; request trong ngưỡng không bị ảnh hưởng.
+- **Xử lý tài khoản seed (ưu tiên cao, làm trước khi deploy):** repo public và `design/database/schema.md` ghi mật khẩu dạng thô của 3 tài khoản seed (có một admin), các tài khoản này đang nằm trên project Supabase. **Acceptance Criteria:** môi trường deploy không còn tài khoản seed dùng mật khẩu đã công khai (đã xoá hoặc đổi mật khẩu); đăng nhập bằng mật khẩu cũ thất bại.
 - **Đồng bộ validate email client và server (ưu tiên thấp):** server chặn thêm U+0085 và NUL, `frontend/src/lib/validateRegister.js` chưa chặn. **Acceptance Criteria:** hai bên cùng từ chối các ký tự này; client báo "Email không hợp lệ." mà không gửi request.
+- **Footer theo trạng thái đăng nhập (ưu tiên thấp):** `Footer.jsx` vẫn hiện link "Đăng nhập", "Đăng ký" khi đã đăng nhập (bấm vào thì `GuestRoute` chuyển sang `/profile`). **Acceptance Criteria:** khi đã đăng nhập, footer không còn hai link này hoặc thay bằng "Hồ sơ"; `design/screens.md` cập nhật theo.
+- **Thống nhất lỗi body không phải JSON object ở login (ưu tiên thấp):** JSON hỏng, `null` hoặc chuỗi đang trả `400 INVALID_JSON` từ middleware, trong khi PRD 4.2 ghi `VALIDATION_ERROR`. Người dùng qua form không gặp. **Acceptance Criteria:** PRD 4.2 và hành vi API khớp nhau.
 - **Chuẩn hoá line ending (ưu tiên thấp):** `npm run format` và `prettier --check` báo lệch trên nhiều file do CRLF/`autocrlf` trên Windows. **Acceptance Criteria:** có `.gitattributes` hoặc cấu hình Prettier thống nhất; `prettier --check` sạch ở `backend` và `frontend`; `git status` không còn file sửa chỉ do line ending.
 
 ## Definition of Done

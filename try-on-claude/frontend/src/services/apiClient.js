@@ -18,6 +18,19 @@ export const tokenStorage = {
   clear: () => localStorage.removeItem(TOKEN_STORAGE_KEY),
 };
 
+let sessionExpiredHandler = null;
+
+/** Register the callback run after a 401 ends the current session (AuthContext). Returns an unregister function. */
+export function setSessionExpiredHandler(fn) {
+  sessionExpiredHandler = fn;
+  return () => {
+    if (sessionExpiredHandler === fn) sessionExpiredHandler = null;
+  };
+}
+
+// Only these codes mean the session is gone; INVALID_CREDENTIALS from login must never clear a token (D18).
+const SESSION_EXPIRED_CODES = new Set(['AUTH_REQUIRED', 'TOKEN_EXPIRED', 'TOKEN_INVALID']);
+
 /**
  * Shared API client. Resolves with parsed JSON (or null for empty bodies).
  * Rejects with ApiError built from the backend format `{ error: { message, code } }`.
@@ -26,8 +39,8 @@ export const tokenStorage = {
  */
 export async function apiRequest(path, { method = 'GET', body, headers = {}, signal } = {}) {
   const finalHeaders = { Accept: 'application/json', ...headers };
-  const token = tokenStorage.get();
-  if (token) finalHeaders.Authorization = `Bearer ${token}`;
+  const sentToken = tokenStorage.get();
+  if (sentToken) finalHeaders.Authorization = `Bearer ${sentToken}`;
 
   const isFormData = body instanceof FormData;
   if (body !== undefined && !isFormData) finalHeaders['Content-Type'] = 'application/json';
@@ -50,9 +63,19 @@ export async function apiRequest(path, { method = 'GET', body, headers = {}, sig
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    // Callers decide how to react to 401 (e.g. clear token + redirect once auth exists).
+    const code = data?.error?.code;
+    // Ignore a stale 401: if the token changed meanwhile, a newer session must not be ended.
+    if (
+      response.status === 401 &&
+      SESSION_EXPIRED_CODES.has(code) &&
+      sentToken &&
+      sentToken === tokenStorage.get()
+    ) {
+      tokenStorage.clear();
+      sessionExpiredHandler?.();
+    }
     const message = data?.error?.message ?? 'Đã có lỗi xảy ra. Vui lòng thử lại.';
-    throw new ApiError(message, { status: response.status, code: data?.error?.code, data });
+    throw new ApiError(message, { status: response.status, code, data });
   }
   return data;
 }

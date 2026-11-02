@@ -8,6 +8,7 @@ const MIN_PASSWORD_CODE_POINTS = 8;
 const MAX_PASSWORD_BYTES = 72;
 
 const MESSAGES = {
+  LOGIN_REQUIRED: 'Vui lòng nhập email và mật khẩu.',
   INVALID_EMAIL: 'Email không hợp lệ.',
   INVALID_PASSWORD:
     'Mật khẩu cần ít nhất 8 ký tự, gồm chữ và số, tối đa 72 ký tự (ít hơn nếu dùng chữ có dấu).',
@@ -20,6 +21,33 @@ function fail(code) {
 
 // Postgres text cannot store NUL; reject it here instead of letting the insert fail with a 500.
 const hasNul = (value) => value.split('').some((ch) => ch.charCodeAt(0) === 0);
+
+/**
+ * True when the email could exist in profiles, so a DB lookup is meaningful.
+ * @param {string} email - already trimmed and lowercased
+ */
+export function isWellFormedEmail(email) {
+  return email.length <= MAX_EMAIL_LENGTH && !hasNul(email) && EMAIL_RE.test(email);
+}
+
+/**
+ * Validate and normalize the login payload. Only presence and type are checked here:
+ * format and strength problems must surface as 401 INVALID_CREDENTIALS (PRD 4.2, D8).
+ * @param {unknown} body - raw req.body (may be undefined or non-object)
+ * @returns {{ email: string, password: string }}
+ * @throws {AppError} 400 VALIDATION_ERROR
+ */
+export function parseLoginInput(body) {
+  const source = body !== null && typeof body === 'object' ? body : {};
+  const { email: rawEmail, password: rawPassword } = source;
+  const invalid = () => new AppError(400, 'VALIDATION_ERROR', MESSAGES.LOGIN_REQUIRED);
+
+  if (typeof rawEmail !== 'string' || typeof rawPassword !== 'string') throw invalid();
+  const email = rawEmail.trim().toLowerCase();
+  if (email === '' || rawPassword === '') throw invalid();
+
+  return { email, password: rawPassword.normalize('NFC') };
+}
 
 /**
  * Validate and normalize the register payload. Reads only the whitelisted fields.
