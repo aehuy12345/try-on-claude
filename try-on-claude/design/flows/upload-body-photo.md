@@ -1,6 +1,6 @@
 # Flow: Upload và thay ảnh toàn thân
 
-US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16, D25–D30. Các bước xử lý ảnh bằng `sharp` là hành vi đích của Sprint 2 Task 7, đã chốt, chưa cài đặt. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
+US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16, D25–D31. Các bước xử lý ảnh bằng `sharp` là hành vi đích của Sprint 2 Task 7, đã chốt, chưa cài đặt. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
 
 ## Chọn ảnh ở client
 
@@ -90,7 +90,7 @@ flowchart TD
         S2[("Bước 2, DB: UPDATE field + body_photo_path mới")]
         S3[("Storage: remove path mới")]
         S4[("Bước 4, Storage: remove path cũ")]
-        S5[("Storage: createSignedUrl(path mới, 3600)")]
+        S5[("Storage: createSignedUrl(path mới, 300)")]
     end
 
     B1 -->|"Không"| B2
@@ -185,7 +185,7 @@ flowchart TD
 
 ## Signed URL hết hạn khi mở trang lâu
 
-TTL 1 giờ. Ảnh đã hiển thị vẫn còn trên màn hình; chỉ lần tải lại ảnh mới lỗi.
+TTL 5 phút ([D31](../PRD.md#2-quyết-định-đã-chốt)). Ảnh đã hiển thị vẫn còn trên màn hình; chỉ lần tải lại ảnh mới lỗi. URL đã cấp không thu hồi được, kể cả khi ảnh đã được thay ([PRD mục 7](../PRD.md#7-rủi-ro-đã-chấp-nhận-và-đề-xuất-backlog)).
 
 1. `<img onError>` gọi lại `GET /api/user/profile`, **chỉ cập nhật `bodyPhotoUrl`**, không đổ đè các ô form đang sửa. Nếu form có thay đổi thì ghi bản nháp trước ([flow hồ sơ](profile.md#giữ-bản-nháp)).
 2. Tải lại ảnh tối đa một lần cho mỗi lần hỏng, tránh lặp vô hạn.

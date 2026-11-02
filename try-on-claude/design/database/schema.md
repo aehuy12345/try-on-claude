@@ -78,8 +78,8 @@ erDiagram
 
 **Private + signed URL (lý do):** ảnh toàn thân kèm số đo là dữ liệu nhạy cảm; bucket public cho phép bất kỳ ai có link xem vĩnh viễn. Vì vậy:
 - DB lưu **path**, không lưu URL vĩnh viễn. (US-02 ghi "URL được lưu trong hồ sơ" → điều chỉnh: lưu path, API trả URL ký tạm thời.)
-- Backend tạo signed URL (`createSignedUrl(path, 3600)`, TTL đề xuất 1 giờ) mỗi lần trả profile. Frontend không lưu URL lâu dài; hết hạn thì gọi lại `GET /api/user/profile`.
-- Timestamp trong tên file: mỗi lần thay ảnh có path mới → không bị cache ảnh cũ.
+- Backend tạo signed URL (`createSignedUrl(path, 300)`, TTL 5 phút, [D31](../PRD.md#2-quyết-định-đã-chốt)) mỗi lần trả profile. Frontend không lưu URL lâu dài; hết hạn thì gọi lại `GET /api/user/profile`.
+- Timestamp trong tên file: mỗi lần thay ảnh có path mới → URL của ảnh mới không bị trả nhầm ảnh cũ từ cache. Việc này không làm URL đã cấp của ảnh cũ hết tác dụng ngay, xem [PRD mục 7](../PRD.md#7-rủi-ro-đã-chấp-nhận-và-đề-xuất-backlog).
 - Sprint sau (GenAI thử đồ) backend đọc ảnh bằng service role/signed URL, không cần public.
 
 **Thay ảnh (US-02: ảnh mới thay ảnh cũ, chỉ 1 ảnh/người):**

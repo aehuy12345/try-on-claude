@@ -50,7 +50,7 @@ Ngoài phạm vi Sprint 1: xác minh email, quên/đổi mật khẩu, xoá ản
 | D18 | Nhận biết hết phiên ở frontend | Theo `code` (`AUTH_REQUIRED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`), không theo URL hay status | `INVALID_CREDENTIALS` của login cũng là 401 nhưng không được redirect |
 | D19 | Hạn token ở frontend | Không tự giải mã `exp`; guard chỉ xét có token hay không, server là bên quyết định | Tránh lỗi do đồng hồ máy khách sai và không cần thêm logic giải mã. Đánh đổi: token hết hạn chỉ bị phát hiện ở lần gọi API kế tiếp |
 
-**Gia cố Sprint 2.** D20–D30 là thiết kế đích của Sprint 2 Task 4, 6, 7, người dùng đã chốt ngày 2026-11-02. D20 (Task 4) đã cài đặt trong code. Code chưa làm theo D21–D30; phần liên quan trong tài liệu sẽ đúng với code sau khi Task 6, 7 xong.
+**Gia cố Sprint 2.** D20–D31 là thiết kế đích của Sprint 2 Task 4–7, người dùng đã chốt ngày 2026-11-02 (D31 thuộc Task 5). D20 (Task 4) đã cài đặt trong code; D31 được đổi trong code cùng đợt với tài liệu này. Code chưa làm theo D21–D30; phần liên quan trong tài liệu sẽ đúng với code sau khi Task 6, 7 xong.
 
 | # | Vấn đề | Quyết định | Lý do |
 |---|--------|-----------|-------|
@@ -65,6 +65,7 @@ Ngoài phạm vi Sprint 1: xác minh email, quên/đổi mật khẩu, xoá ản
 | D28 | Phân loại lỗi `sharp` | `failOn: 'warning'`. Lỗi khi đọc hoặc giải mã: `400 INVALID_FILE_TYPE`, "Không đọc được ảnh. Vui lòng chọn ảnh khác.". Riêng câu lỗi chứa `out of memory`, hoặc lỗi do tham số sai (ném đồng bộ khi dựng pipeline): `500 UPLOAD_FAILED`, ghi log | `sharp` không có mã lỗi riêng (`err.code` rỗng), chỉ có câu chữ, và PNG hỏng còn báo `unable to write to target`. Vì vậy mặc định coi là file hỏng, chỉ tách lỗi hết bộ nhớ. `warning` là mức docs khuyên cho dữ liệu không tin cậy; mọi mức trừ `none` đều từ chối file cụt |
 | D29 | Xử lý đồng thời | Mỗi process chỉ xử lý **một ảnh tại một thời điểm**, các request khác chờ trong hàng đợi trong bộ nhớ | Rate limit không chặn request gửi cùng lúc. Đo được 4 ảnh 64 MP song song đạt đỉnh 2 255 MB, tuần tự 613 MB. Ảnh 12 MP chỉ mất khoảng 0,2 giây nên hàng đợi gần như không ảnh hưởng người dùng |
 | D30 | Ảnh đã có trong Storage | Không viết job xử lý lại. D25 áp dụng cho ảnh tải lên sau Task 7. Trước khi deploy, kiểm tra bucket và xoá ảnh test còn lại | Ngày 2026-11-02 bucket `body-photos` có 0 object, chưa deploy nên chưa có ảnh người dùng thật. Job chạy một lần tốn công mà gần như không có dữ liệu để xử lý |
+| D31 | TTL URL ký của ảnh toàn thân | `createSignedUrl(path, 300)`: URL ký dùng được 5 phút. URL đã cấp không thu hồi được, rủi ro đã chấp nhận ở [mục 7](#7-rủi-ro-đã-chấp-nhận-và-đề-xuất-backlog) | Thời hạn tối đa URL cũ còn tải được ảnh bám theo hạn token, 1 giờ là quá dài với dữ liệu nhạy cảm. Đo được token hết hạn chặn bản cache đang HIT, và `Expires` của URL ký trùng hạn token nên cache trình duyệt cũng ngắn theo. Hiệu năng gần như không đổi vì mỗi lần gọi profile đã ra token mới. Đánh đổi: tab mở quá 5 phút mà tải lại ảnh thì `onError` phải làm mới một lần |
 
 ## 3. Quy tắc validate
 
@@ -168,7 +169,7 @@ Auth: Bearer. Response `200`: đối tượng hồ sơ, không bọc thêm lớp
 }
 ```
 
-`displayName`, `heightCm`, `weightKg` là `null` khi chưa có. `bodyPhotoUrl` là signed URL TTL 1 giờ; `null` khi chưa có ảnh, object không tồn tại, hoặc tạo URL lỗi (không trả 500).
+`displayName`, `heightCm`, `weightKg` là `null` khi chưa có. `bodyPhotoUrl` là signed URL TTL 5 phút (D31); `null` khi chưa có ảnh, object không tồn tại, hoặc tạo URL lỗi (không trả 500).
 
 Lỗi: xác thực dùng chung, `500 INTERNAL_ERROR`.
 
@@ -231,7 +232,7 @@ Thay đổi cần làm ở `apiClient.js` và route (Task 5–7):
 
 ## 7. Rủi ro đã chấp nhận và đề xuất backlog
 
-Các mục dưới **chưa được xử lý**. Thêm vào backlog nếu người dùng đồng ý.
+Các mục dưới **chưa được xử lý**. Thêm vào backlog nếu người dùng đồng ý. Riêng dòng URL ký đã cấp là rủi ro đã chấp nhận (D31), người dùng chốt ngày 2026-11-02.
 
 | Rủi ro / đề xuất | Tác động | Đề xuất |
 |------------------|----------|---------|
@@ -244,6 +245,7 @@ Các mục dưới **chưa được xử lý**. Thêm vào backlog nếu ngườ
 | `failOn: 'warning'` có thể từ chối ảnh trình duyệt vẫn đọc được (D28) | Người dùng được báo chọn ảnh khác dù preview hiển thị bình thường | Thử với ảnh điện thoại thật ở Task 7. Nếu từ chối nhầm thì hạ xuống `error` (vẫn từ chối file cụt) |
 | File JPEG hỏng giữa dữ liệu có thể không phát hiện được | `sharp` giải mã thành công, ảnh lưu bị nhiễu; người dùng thấy ngay trên preview | Chấp nhận |
 | Encode lại không giữ nguyên ảnh gốc (D25, D26) | JPEG giảm chất lượng nhẹ; APNG chỉ còn khung đầu; PNG palette có thể lớn lên và bị từ chối | Chấp nhận với ảnh toàn thân |
+| URL ký đã cấp không thu hồi được (D31, **rủi ro đã chấp nhận**) | Thay ảnh hoặc xoá ảnh không làm URL cũ hết tác dụng ngay: CDN có thể còn trả ảnh sau khi xoá, trình duyệt đã tải có thể giữ tới hạn. **Thời hạn tối đa: 5 phút tính từ lúc cấp URL, không phải từ lúc thay ảnh.** **Đã đo** (tại một PoP `HKG`, ngày 2026-11-02): 101/103 object hết trả ảnh trong khoảng 1 phút sau khi xoá (lần `200` cuối muộn nhất ở 56,8 s); token hết hạn chặn bản cache đang HIT với TTL 90, 300, 600. **Chưa đo, chỉ là suy luận:** 2/103 object trả ảnh trở lại sau khi đã `400`, một object vẫn trả ảnh ở 540 s lúc dừng đo; chưa object nào như vậy được theo dõi tới hạn token, nên giới hạn 5 phút với trường hợp này chưa được chứng minh. PoP khác, trình duyệt khác, điện thoại thật cũng chưa đo. Xoá ảnh cũ lỗi: object còn nguyên, URL đã cấp vẫn chỉ dùng được tới hạn token | Chấp nhận với TTL 5 phút. Thay đổi gói Supabase thì đo lại. `cacheControl` không có tác dụng trên URL ký; purge bị `403` trên project hiện tại. User story xoá ảnh, xoá tài khoản sau này không được hứa "xoá là mất ngay". Xem lại phương án proxy ảnh qua backend khi làm user story xoá ảnh |
 | Không xoá được ảnh/dữ liệu | Người dùng không tự xoá được dữ liệu nhạy cảm | US mới: xoá ảnh, xoá tài khoản |
 | Chưa có CSP | XSS đọc được token trong `localStorage` | Thêm CSP/`helmet` khi deploy |
 | Server không kiểm tra kích thước ảnh | Ảnh quá nhỏ vẫn lưu được, ảnh hưởng chất lượng thử đồ | Xem lại ở US-05 |

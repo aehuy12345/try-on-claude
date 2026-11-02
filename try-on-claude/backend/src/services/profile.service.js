@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/AppError.js';
 
 const BUCKET = 'body-photos';
-const SIGNED_URL_TTL_SECONDS = 3600;
+const SIGNED_URL_TTL_SECONDS = 300;
 const PG_CHECK_VIOLATION = '23514';
 // Explicit column list: never select('*') on profiles, it holds password_hash.
 const PROFILE_COLUMNS =

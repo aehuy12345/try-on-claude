@@ -136,13 +136,24 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Khi test Task 7 của Sprint 1, URL ký của ảnh đã xoá vẫn trả `200` (nghi do cache CDN; Task 1 tái hiện được và response có `cf-cache-status: HIT`, chưa kết luận nguyên nhân), có thể tới hết TTL 1 giờ. agent-ba điều tra, agent-coder sửa nếu cần.
 
 **Công việc:**
-- [ ] Tái hiện và xác định nguyên nhân
-- [ ] Chọn giữa việc sửa và chấp nhận rủi ro, người dùng chốt
-- [ ] Sửa code hoặc ghi vào `design/PRD.md` mục 7
+- [x] Tái hiện và xác định nguyên nhân
+- [x] Chọn giữa việc sửa và chấp nhận rủi ro, người dùng chốt
+- [x] Sửa code hoặc ghi vào `design/PRD.md` mục 7
 
 **Acceptance Criteria:**
 - Xác định được nguyên nhân
 - Hoặc URL cũ không còn tải được ảnh sau khi thay, hoặc PRD mục 7 ghi rõ việc chấp nhận rủi ro kèm thời hạn tối đa
+
+**Kết quả (2026-11-02):** nguyên nhân là cache CDN, không phải token: object đã mất khỏi Storage, URL chưa từng được tải thì không tải được từ lần đo đầu, còn bản `200` có `cf-cache-status: HIT`. Người dùng chốt phương án B: TTL 300 s (D31) và chấp nhận rủi ro ở PRD mục 7, thời hạn tối đa 5 phút tính từ lúc cấp URL. `cacheControl` không có tác dụng trên URL ký, purge bị `403`.
+
+- **Số đo (một PoP `HKG`):** 101/103 object hết trả ảnh trong khoảng 1 phút sau khi xoá, lần `200` cuối muộn nhất ở 56,8 s. Token hết hạn chặn bản cache đang HIT với TTL 90, 300, 600.
+- **Code:** `npm test` exit 0, 114 pass, 0 fail; test TTL mới fail khi đổi lại 3600. Lint backend, frontend và build frontend exit 0.
+- **Chạy thử trên project thật:** URL có `exp - iat = 300`; sau 313 s URL cũ trả `400`, `GET /api/user/profile` trả URL mới tải được. Trên Chrome headless, ảnh lỗi được làm mới đúng 1 lần rồi hiện lại, không lặp request. Tài khoản QA và ảnh đã xoá: `profiles` 3 dòng, bucket 0 object như trước.
+
+**Chưa kiểm tra và lý do:**
+- **2/103 object trả ảnh trở lại sau khi đã `400`:** một object vẫn trả ảnh ở 540 s lúc dừng đo. Đợt đo thêm 60 object không gặp lại, nên chưa biết token hết hạn có chặn được trường hợp này không. Giới hạn 5 phút với trường hợp này là suy luận, PRD mục 7 đã ghi rõ.
+- **PoP khác, trình duyệt khác Chrome headless, điện thoại thật:** chưa có điều kiện đo.
+- **Gói Supabase của project:** không đọc được bằng công cụ hiện có; `x-smart-cdn: true` và purge bị `403` trái nhau.
 
 ---
 
@@ -224,7 +235,7 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - **Các mục trong `design/PRD.md` mục 7:** xoá ảnh và xoá tài khoản (cần user story mới), CSP/`helmet`, thu hồi token, dọn object mồ côi.
 - **Kiểm tra kích thước ảnh ở server:** xem lại ở US-05.
 - **Phân biệt "chưa có ảnh" với "không tạo được URL ký" (ưu tiên thấp, phát hiện ở Task 1):** lỗi tạm thời của Storage khiến người đã có ảnh thấy "Chưa có ảnh toàn thân". **Acceptance Criteria:** hồ sơ có path nhưng không tạo được URL thì hiện "Không tải được ảnh" kèm Thử lại; hồ sơ chưa có path vẫn hiện "Chưa có ảnh toàn thân"; API không trả path; cập nhật PRD 4.3, `screens.md`, flow ảnh.
-- **Ảnh cũ nằm lại khi xoá lỗi (ưu tiên trung bình, phát hiện ở Task 1):** thay ảnh mà bước xoá ảnh cũ lỗi thì ảnh riêng tư còn trong Storage, PRD mục 7 chưa nêu trường hợp này. **Acceptance Criteria:** PRD mục 7 ghi trường hợp này; job dọn object mồ côi xoá được các ảnh không còn được tham chiếu.
+- **Ảnh cũ nằm lại khi xoá lỗi (ưu tiên trung bình, phát hiện ở Task 1):** thay ảnh mà bước xoá ảnh cũ lỗi thì ảnh riêng tư còn trong Storage. PRD mục 7 mới nêu phần URL đã cấp (D31), chưa nêu việc ảnh còn nằm lại. **Acceptance Criteria:** PRD mục 7 ghi trường hợp này; job dọn object mồ côi xoá được các ảnh không còn được tham chiếu.
 - **Health check trả `503` một lần (ưu tiên thấp, phát hiện ở Task 1):** `GET /api/health` trả `503` một lần ngay sau khi instance test khởi động, lần gọi kế tiếp trả `200`; 3 lần gọi trên instance khởi động sau đó đều `200`. Chưa rõ nguyên nhân, response không ghi lý do. **Acceptance Criteria:** tái hiện và xác định được nguyên nhân, hoặc ghi nhận không tái hiện được sau khi thử lại nhiều lần khởi động.
 - **Yêu cầu Node sai (ưu tiên cao, làm trước khi deploy, phát hiện ở Task 2):** `engines`, `CLAUDE.md` ghi Node >= 20, nhưng `@supabase/supabase-js` đã cài yêu cầu Node >= 22. Trên Node 20.20.2 app crash ngay lúc nạp `config/supabase.js` ("native WebSocket not found"), `npm test` cũng lỗi. **Acceptance Criteria:** `engines`, `CLAUDE.md`, README ghi cùng một phiên bản Node tối thiểu; backend khởi động và `npm test` pass trên đúng phiên bản đó.
 

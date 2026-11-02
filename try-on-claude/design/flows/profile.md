@@ -1,6 +1,6 @@
 # Flow: Lấy và cập nhật hồ sơ
 
-US-02. API: [PRD 4.3, 4.4](../PRD.md#43-get-apiuserprofile). Quyết định: D9–D14, D20–D24. Rate limit trong sơ đồ cập nhật là hành vi đích của Sprint 2 Task 6, đã chốt, chưa cài đặt. Phần xử lý file: [flow ảnh toàn thân](upload-body-photo.md). Xác thực: [flow bảo vệ route](logout-protected-routes.md).
+US-02. API: [PRD 4.3, 4.4](../PRD.md#43-get-apiuserprofile). Quyết định: D9–D14, D20–D24, D31. Rate limit trong sơ đồ cập nhật là hành vi đích của Sprint 2 Task 6, đã chốt, chưa cài đặt. Phần xử lý file: [flow ảnh toàn thân](upload-body-photo.md). Xác thực: [flow bảo vệ route](logout-protected-routes.md).
 
 ## Lấy hồ sơ
 
@@ -37,7 +37,7 @@ flowchart TD
 
     subgraph S["Supabase"]
         S1[("SELECT các cột hồ sơ theo id trong JWT")]
-        S2[("Storage: createSignedUrl(path, 3600)")]
+        S2[("Storage: createSignedUrl(path, 300)")]
     end
 
     U1 --> F1
