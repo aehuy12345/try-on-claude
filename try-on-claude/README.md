@@ -80,10 +80,10 @@ Hiện chưa có test runner.
 ## Cấu trúc repo
 
 - `backend/`: Express API
-  - `src/config` (env, supabase, jwt), `src/routes`, `src/controllers`, `src/services`, `src/middlewares`, `src/utils`
+  - `src/config` (env, supabase, jwt), `src/routes`, `src/controllers`, `src/services`, `src/validators`, `src/middlewares`, `src/utils`
   - `src/app.js` (tạo app), `src/server.js` (listen)
 - `frontend/`: React app
-  - `src/{components,pages,layouts,routes,services,hooks,context,utils,assets}`
+  - `src/{components,pages,layouts,routes,services,hooks,context,lib,utils,assets}`
 - `design/`: PRD, flows, database schema, screens
 - `migrations/`: SQL migration và seed cho Supabase
 - `sprints/`: user stories + sprint backlog
