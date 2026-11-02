@@ -5,7 +5,7 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import LandingPage from '../pages/LandingPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
-import ProfilePlaceholderPage from '../pages/ProfilePlaceholderPage.jsx';
+import ProfilePage from '../pages/ProfilePage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 
 const router = createBrowserRouter([
@@ -22,7 +22,7 @@ const router = createBrowserRouter([
       },
       {
         Component: ProtectedRoute,
-        children: [{ path: 'profile', Component: ProfilePlaceholderPage }],
+        children: [{ path: 'profile', Component: ProfilePage }],
       },
       { path: '*', Component: NotFoundPage },
     ],

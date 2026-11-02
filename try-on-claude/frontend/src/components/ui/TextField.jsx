@@ -22,6 +22,7 @@ function EyeIcon({ off }) {
 /**
  * Ô nhập có label luôn hiển thị, gợi ý và thông báo lỗi liên kết bằng aria-describedby.
  * - `error`: chuỗi lỗi (hoặc node, ví dụ kèm link). Có lỗi thì viền danger + aria-invalid.
+ * - `inputClassName`: class thêm cho <input> (vd kiểu chỉ đọc); `label` có thể là node.
  * - `type="password"` tự có nút Hiện/Ẩn mật khẩu.
  */
 export default function TextField({
@@ -30,6 +31,7 @@ export default function TextField({
   error,
   type = 'text',
   className = '',
+  inputClassName = '',
   ...props
 }) {
   const id = useId();
@@ -38,9 +40,7 @@ export default function TextField({
   const [revealed, setRevealed] = useState(false);
   const isPassword = type === 'password';
   const showHint = Boolean(hint) && !error;
-  const describedBy = [error ? errorId : null, showHint ? hintId : null]
-    .filter(Boolean)
-    .join(' ');
+  const describedBy = [error ? errorId : null, showHint ? hintId : null].filter(Boolean).join(' ');
 
   return (
     <div className={className}>
@@ -55,7 +55,7 @@ export default function TextField({
           aria-describedby={describedBy || undefined}
           className={`block h-12 w-full rounded-xl border bg-white px-4 text-base text-ink-900 placeholder:text-ink-500 transition duration-200 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/30 disabled:opacity-60 ${
             error ? 'border-danger' : 'border-ink-200'
-          } ${isPassword ? 'pr-12' : ''}`}
+          } ${isPassword ? 'pr-12' : ''} ${inputClassName}`}
           {...props}
         />
         {isPassword && (

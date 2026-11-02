@@ -5,9 +5,8 @@ import {
   setSessionExpiredHandler,
   tokenStorage,
 } from '../services/apiClient.js';
+import { clearDraft } from '../lib/profileDraft.js';
 import { AuthContext } from './authContext.js';
-
-const PROFILE_DRAFT_KEY = 'tryon_profile_draft';
 
 /**
  * Holds the session token (source of truth for route guards) and in-memory flags.
@@ -59,7 +58,7 @@ export function AuthProvider({ children }) {
   // Callers navigate away first (Header): clearing the token on a protected page would redirect to /login.
   const logout = useCallback(() => {
     tokenStorage.clear();
-    localStorage.removeItem(PROFILE_DRAFT_KEY);
+    clearDraft();
     setState({ token: null, justRegistered: false, sessionExpired: false });
   }, []);
 
