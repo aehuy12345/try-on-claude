@@ -88,7 +88,7 @@ flowchart TD
     end
 
     subgraph F["Frontend (không gọi API)"]
-        F1["await navigate('/', replace)"]
+        F1["await navigate('/', replace, flushSync)"]
         F2["Xoá tryon_token và tryon_profile_draft"]
         F3["Xoá dữ liệu hồ sơ trong state, cập nhật AuthContext"]
         F4["Tab khác nhận sự kiện storage, chuyển về trạng thái khách"]
@@ -101,7 +101,7 @@ flowchart TD
     F2 -.-> F4
 ```
 
-Không có Backend và Supabase trong flow này (D5). Phải điều hướng **trước** khi xoá token: nếu xoá trước, `ProtectedRoute` sẽ render lại và đưa người dùng tới `/login` thay vì `/`.
+Không có Backend và Supabase trong flow này (D5). Phải điều hướng **trước** khi xoá token: nếu xoá trước, `ProtectedRoute` sẽ render lại và đưa người dùng tới `/login` thay vì `/`. Chỉ `await navigate('/', { replace: true })` là chưa đủ: promise resolve trước khi React commit route mới, nên cần thêm `flushSync: true` để route mới được commit trước khi `logout()` chạy (đã kiểm chứng trên trình duyệt).
 
 ## Nhánh lỗi
 
@@ -128,7 +128,7 @@ Không có Backend và Supabase trong flow này (D5). Phải điều hướng **
 ## Hệ quả của JWT stateless
 
 - Logout chỉ xoá token ở trình duyệt hiện tại; **bản sao token, nếu có, vẫn dùng được đến khi hết hạn**. Backend không có danh sách thu hồi.
-- TTL đề xuất **24 giờ** (D6). `backend/.env.example` đang ghi `7d`, cần đổi ở Task 6. Không có refresh token: hết hạn thì đăng nhập lại.
+- TTL **24 giờ** (D6), đặt qua `JWT_EXPIRES_IN=24h` trong `backend/.env.example`. Không có refresh token: hết hạn thì đăng nhập lại.
 - Đổi `JWT_SECRET` làm mọi token mất hiệu lực, là cách thu hồi khẩn cấp duy nhất ở Sprint 1.
 - `role` trong token có thể cũ; endpoint Admin ở sprint sau cần kiểm tra lại DB ([schema mục 8](../database/schema.md#8-lưu-ý-cho-backend-task-57)).
 

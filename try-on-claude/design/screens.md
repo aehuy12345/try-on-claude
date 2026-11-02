@@ -1,6 +1,6 @@
 # Screen Descriptions
 
-Xem token và thành phần dùng chung tại `design/design-system.md`. Màn hình đăng nhập, hồ sơ... sẽ được bổ sung ở các task sau.
+Xem token và thành phần dùng chung tại `design/design-system.md`. Màn hình hồ sơ thật... sẽ được bổ sung ở các task sau.
 
 ## Landing Page — `/`
 
@@ -12,8 +12,8 @@ Public.
 
 ### Các thành phần chính
 1. **Header** (`components/layout/Header.jsx`, dùng chung qua `MainLayout`)
-   - Mô tả: logo Try-on bên trái; nav anchor "Tính năng" (`/#features`), "Cách hoạt động" (`/#how-it-works`); nút "Đăng nhập" (`/login`, ghost) và "Đăng ký" (`/register`, primary).
-   - Tương tác: click link cuộn mượt tới section; trên mobile bấm hamburger mở/đóng menu, chọn link thì tự đóng, Esc đóng.
+   - Mô tả: logo Try-on bên trái; nav anchor "Tính năng" (`/#features`), "Cách hoạt động" (`/#how-it-works`); khối tài khoản bên phải: **khách** thấy "Đăng nhập" (`/login`, ghost) và "Đăng ký" (`/register`, primary); **đã đăng nhập** (`isAuthenticated` từ `useAuth()`) thấy "Hồ sơ" (`/profile`, ghost) và "Đăng xuất" (secondary, là `<button>`). Cùng quy tắc ở menu di động (hai nút cạnh nhau).
+   - Tương tác: click link cuộn mượt tới section; trên mobile bấm hamburger mở/đóng menu, chọn link hoặc bấm Hồ sơ/Đăng xuất thì tự đóng, Esc đóng. "Đăng xuất" gọi `logout` của AuthContext: điều hướng về `/` (replace) trước, rồi mới xoá token ([flow](flows/logout-protected-routes.md#logout)).
    - Trạng thái: default (trong suốt) / đã cuộn (nền `canvas/90` + blur + viền mảnh) / menu mở. Hamburger có `aria-expanded`.
    - Hiệu ứng: đổi nền khi cuộn (transition màu 300ms). Sticky `top-0`.
 2. **Hero** (`HeroSection`, `HeroVisual`)
@@ -39,12 +39,12 @@ Public.
 
 ### Navigation
 - Đến màn hình này từ: logo ở mọi trang, trang 404, đường dẫn trực tiếp.
-- Từ màn hình này đến: `/register` (Thử đồ ngay, Đăng ký), `/login` (Đăng nhập), anchor `#features`, `#how-it-works` trong cùng trang. `/register` đã có; `/login` chưa có tới Task 6 (hiện rơi vào 404).
+- Từ màn hình này đến: `/register` (Thử đồ ngay, Đăng ký), `/login` (Đăng nhập), anchor `#features`, `#how-it-works` trong cùng trang. Khi đã đăng nhập: `/profile` (Hồ sơ), `/` (Đăng xuất).
 
 ### Ghi chú
 - Anchor dùng `href="/#..."` nên cũng hoạt động từ trang khác (tải lại về `/` rồi cuộn). `scroll-padding-top: 5rem` để tiêu đề section không bị header che.
 - Minh hoạ không dùng ảnh ngoài; sẽ thay bằng ảnh thật nếu có.
-- Người dùng đã đăng nhập: tuỳ biến header (hiện "Phòng thử đồ"/avatar) sẽ làm ở task xác thực.
+- Người dùng đã đăng nhập: header đổi sang "Hồ sơ" + "Đăng xuất" (xem Header ở trên); các CTA trong trang vẫn trỏ tới `/register`, GuestRoute sẽ chuyển người đã đăng nhập sang `/profile`. Mục "Phòng thử đồ"/avatar sẽ thêm ở sprint sau.
 - Tôn trọng `prefers-reduced-motion`.
 
 ## Đăng ký — `/register`
@@ -88,14 +88,66 @@ Chỉ khách (GuestRoute). Đã có token thì chuyển `/profile` (replace), kh
 - Desktop (> 1024px): 2 cột, ảnh trang trí trái, form phải.
 
 ### Navigation
-- Đến từ: Header (Đăng ký), Landing (Thử đồ ngay, CTA cuối trang), link "Đăng ký" từ `/login` (Task 6).
+- Đến từ: Header (Đăng ký), Landing (Thử đồ ngay, CTA cuối trang), link "Đăng ký" từ `/login`.
 - Đi tới: `/profile` (thành công), `/login` (link dưới form và link trong lỗi email trùng), `/` (logo).
 
 ### Ghi chú
 - Trang đăng ký không tự gọi `navigate`: `GuestRoute` chuyển `/profile` khi token xuất hiện trong `AuthContext`.
 - Không log hay hiển thị mật khẩu trong URL/console.
 - Tôn trọng `prefers-reduced-motion` (cấu hình toàn cục).
-- `/login` chưa có tới Task 6: link "Đăng nhập" tạm rơi vào 404.
+- Link sang `/login` không mang `state.from`: đăng ký luôn về `/profile`.
+
+## Đăng nhập — `/login`
+
+Luồng: [design/flows/login.md](flows/login.md), [logout-protected-routes.md](flows/logout-protected-routes.md). Code: `pages/LoginPage.jsx`, `components/auth/LoginForm.jsx`, `components/ui/{TextField,Alert,Button}.jsx`, `lib/validateLogin.js` (dùng lại `isValidEmail` và chuẩn hoá của `validateRegister.js`).
+
+### Mục đích
+Đăng nhập bằng email và mật khẩu; thành công thì vào route trước đó (`state.from`) hoặc `/profile`.
+
+### Quyền truy cập
+Chỉ khách (GuestRoute). Đã có token thì chuyển `state.from` hoặc `/profile` (replace), không hiện form.
+
+### Các thành phần chính
+1. **Banner hết phiên** (`Alert tone="warning"`, `role="status"`) — chỉ hiện khi `location.state?.reason === 'session_expired'` (do `ProtectedRoute` đặt): "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại." Cố định (không tự ẩn, không đóng được), nằm trên tiêu đề; dùng chung cho `AUTH_REQUIRED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`. Mở `/login` trực tiếp thì không có.
+2. **Tiêu đề** — eyebrow "Chào mừng trở lại", H1 "Đăng nhập Try-on", dòng mô tả. Hiệu ứng: `fade-up` khi vào trang.
+3. **Thẻ form** (`LoginForm`, trong card trắng `rounded-card shadow-soft`)
+   - **Alert lỗi chung** (`role="alert"`) đặt trên cùng form, không gắn với ô nào.
+   - **Email** (`TextField`): `type="email"`, `inputmode="email"`, `autocomplete="email"`, không tự viết hoa.
+   - **Mật khẩu** (`TextField` password): `autocomplete="current-password"`, nút Hiện/Ẩn (`aria-pressed`, vùng chạm 48px), không hint độ mạnh (login không áp quy tắc mật khẩu).
+   - **Nút "Đăng nhập"** (primary, full-width, cao 44px+).
+   - Label luôn hiển thị; lỗi nằm dưới ô, liên kết bằng `aria-describedby`, ô lỗi có `aria-invalid` và viền `danger`, icon + chữ (không chỉ màu).
+4. **Link "Chưa có tài khoản? Đăng ký"** → `/register` (không mang `state.from`).
+5. **Ảnh trang trí** (chỉ desktop, `aria-hidden`): khung 3:4 gradient `blush/sand/brand-100` kèm khối chữ "Chào mừng trở lại".
+
+### Trạng thái và thông báo (khớp bảng "Nhánh lỗi" của flow)
+| Trạng thái | Hiển thị |
+|------------|----------|
+| Mặc định | Form trống, nút bật |
+| Thiếu email và/hoặc mật khẩu (client, không gửi request) | Dưới mỗi ô bị thiếu: "Vui lòng nhập email và mật khẩu." (email chỉ có khoảng trắng coi là thiếu) |
+| Email sai định dạng (client) | Dưới ô email: "Email không hợp lệ." (cùng regex và chuẩn hoá với đăng ký). Mật khẩu chỉ cần không rỗng |
+| Sau lỗi client | Focus vào ô lỗi đầu tiên; giữ dữ liệu; lỗi của ô tự xoá khi sửa ô đó |
+| Đang submit | Nút disabled + spinner + "Đang đăng nhập...", `aria-busy`; các ô `readOnly` (giữ dữ liệu, tránh mất focus) |
+| 401 `INVALID_CREDENTIALS` | Alert chung "Email hoặc mật khẩu không đúng."; giữ email, **xoá mật khẩu** và focus vào ô mật khẩu; không redirect, không xoá token |
+| 400 `VALIDATION_ERROR` (hiếm, client đã chặn) | Alert chung "Vui lòng nhập email và mật khẩu." |
+| 500 `INTERNAL_ERROR` | Alert chung "Đã có lỗi xảy ra. Vui lòng thử lại."; giữ email và mật khẩu |
+| Lỗi mạng | Alert chung "Không thể kết nối tới máy chủ. Vui lòng thử lại."; giữ email và mật khẩu |
+| Sau mọi lỗi server | Nút bật lại; Alert chung tự ẩn khi người dùng sửa bất kỳ ô nào hoặc gửi lại |
+
+### Responsive
+- Mobile (< 640px): một cột, card form `p-6`, nút full-width, banner hết phiên full-width phía trên tiêu đề; không có ảnh trang trí.
+- Tablet (640-1024px): một cột căn giữa, form `max-w-md`, card `p-8`.
+- Desktop (> 1024px): 2 cột, ảnh trang trí trái, form phải (cùng bố cục `/register`).
+
+### Navigation
+- Đến từ: Header (Đăng nhập), link "Đăng nhập" từ `/register` (kể cả trong lỗi email trùng), `ProtectedRoute` (kèm `state.from` và `reason`), xử lý 401 hết phiên.
+- Đi tới: `state.from` hoặc `/profile` (thành công), `/register` (link dưới form), `/` (logo).
+
+### Ghi chú
+- Trang đăng nhập không tự gọi `navigate`: `GuestRoute` chuyển trang khi token xuất hiện trong `AuthContext` (nơi duy nhất điều hướng sau login/register).
+- Một thông báo chung cho cả sai email lẫn sai mật khẩu (chống dò tài khoản); không nêu field nào sai.
+- Không log hay hiển thị mật khẩu/token trong URL/console.
+- `from` chỉ đọc từ `location.state`, không từ query string.
+- Tôn trọng `prefers-reduced-motion` (cấu hình toàn cục).
 
 ## Hồ sơ (tạm) — `/profile`
 
@@ -103,7 +155,7 @@ Chỉ khách (GuestRoute). Đã có token thì chuyển `/profile` (replace), kh
 Đích sau đăng ký để không rơi vào 404. Task 7 thay bằng trang hồ sơ thật (ảnh toàn thân, chiều cao, cân nặng).
 
 ### Quyền truy cập
-Đã đăng nhập (ProtectedRoute sẽ do agent-coder làm; bản UI hiện chưa chặn).
+Đã đăng nhập (`ProtectedRoute` do agent-coder làm ở Task 6; bản UI hiện chưa chặn).
 
 ### Các thành phần chính
 1. **Thông báo thành công** (`Alert tone="success"`, `role="status"`): "Tạo tài khoản thành công. Hãy hoàn thiện hồ sơ để bắt đầu thử đồ." Chỉ hiện khi vừa đăng ký (cờ `justRegistered`, tiêu thụ một lần, tải lại trang thì không hiện lại). Cờ nằm trong `AuthContext`, không dùng router state.
@@ -113,5 +165,5 @@ Chỉ khách (GuestRoute). Đã có token thì chuyển `/profile` (replace), kh
 Một cột `max-w-3xl` ở mọi breakpoint.
 
 ### Navigation
-- Đến từ: `/register` (sau đăng ký thành công).
-- Đi tới: logo về `/`.
+- Đến từ: `/register` (sau đăng ký thành công), `/login` (sau đăng nhập, khi không có `state.from`), Header (Hồ sơ).
+- Đi tới: logo về `/`; Header "Đăng xuất" về `/`.

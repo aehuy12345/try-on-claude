@@ -12,7 +12,7 @@ export const MESSAGES = {
   NETWORK_ERROR: 'Không thể kết nối tới máy chủ. Vui lòng thử lại.',
 };
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const utf8Bytes = (s) => new TextEncoder().encode(s).length;
 
 export function normalizeEmail(email) {
@@ -23,11 +23,16 @@ export function normalizePassword(password) {
   return password.normalize('NFC'); // không trim
 }
 
+/** Email hợp lệ sau chuẩn hoá (dùng chung với đăng nhập). */
+export function isValidEmail(email) {
+  const e = normalizeEmail(email);
+  return e.length <= 254 && EMAIL_RE.test(e);
+}
+
 /** Trả về object lỗi theo field: { email?, password?, confirmPassword? } (rỗng nếu hợp lệ). */
 export function validateRegister({ email, password, confirmPassword }) {
   const errors = {};
-  const e = normalizeEmail(email);
-  if (e.length > 254 || !EMAIL_RE.test(e)) errors.email = MESSAGES.INVALID_EMAIL;
+  if (!isValidEmail(email)) errors.email = MESSAGES.INVALID_EMAIL;
 
   const p = normalizePassword(password);
   if ([...p].length < 8 || utf8Bytes(p) > 72 || !/\p{L}/u.test(p) || !/\p{N}/u.test(p)) {
