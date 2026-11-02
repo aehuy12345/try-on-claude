@@ -1,6 +1,6 @@
 # Screen Descriptions
 
-Xem token và thành phần dùng chung tại `design/design-system.md`. Màn hình hồ sơ thật... sẽ được bổ sung ở các task sau.
+Xem token và thành phần dùng chung tại `design/design-system.md`. Màn hình hồ sơ ở cuối file.
 
 ## Landing Page — `/`
 
@@ -149,21 +149,68 @@ Chỉ khách (GuestRoute). Đã có token thì chuyển `state.from` hoặc `/pr
 - `from` chỉ đọc từ `location.state`, không từ query string.
 - Tôn trọng `prefers-reduced-motion` (cấu hình toàn cục).
 
-## Hồ sơ (tạm) — `/profile`
+## Hồ sơ — `/profile`
+
+Luồng: [flows/profile.md](flows/profile.md), [flows/upload-body-photo.md](flows/upload-body-photo.md). Code: `pages/ProfilePage.jsx`, `components/profile/{ProfileForm,BodyPhotoPicker,ProfileSkeleton}.jsx`, `components/ui/{TextField,Alert,Button,Spinner}.jsx`, `lib/validateProfile.js`, `lib/validateBodyPhoto.js`. Dữ liệu: `services/profileService.js` (API thật), bản nháp: `lib/profileDraft.js`.
 
 ### Mục đích
-Đích sau đăng ký để không rơi vào 404. Task 7 thay bằng trang hồ sơ thật (ảnh toàn thân, chiều cao, cân nặng).
+Xem và cập nhật hồ sơ: tên hiển thị, chiều cao, cân nặng, ảnh toàn thân dùng làm mẫu thử đồ. Là đích sau đăng ký và đăng nhập.
 
 ### Quyền truy cập
-Đã đăng nhập (`ProtectedRoute` do agent-coder làm ở Task 6; bản UI hiện chưa chặn).
+Đã đăng nhập (`ProtectedRoute`). Hết phiên thì chuyển `/login` kèm `state.from`.
 
 ### Các thành phần chính
-1. **Thông báo thành công** (`Alert tone="success"`, `role="status"`): "Tạo tài khoản thành công. Hãy hoàn thiện hồ sơ để bắt đầu thử đồ." Chỉ hiện khi vừa đăng ký (cờ `justRegistered`, tiêu thụ một lần, tải lại trang thì không hiện lại). Cờ nằm trong `AuthContext`, không dùng router state.
-2. **Tiêu đề** "Hồ sơ của bạn" và dòng giải thích trang đang tạm.
+1. **Thông báo thành công đăng ký** (`Alert tone="success"`) — "Tạo tài khoản thành công. Hãy hoàn thiện hồ sơ để bắt đầu thử đồ." Chỉ hiện khi vừa đăng ký (cờ `justRegistered` trong `AuthContext`, tiêu thụ một lần, tải lại thì không hiện lại), đặt trên tiêu đề.
+2. **Tiêu đề** — eyebrow "Hồ sơ", H1 "Hồ sơ của bạn", dòng mô tả. Hiệu ứng: `fade-up`.
+3. **Thẻ nội dung** (card trắng `rounded-card shadow-soft`) chứa một trong ba trạng thái: skeleton, lỗi tải, form.
+4. **Skeleton** (`ProfileSkeleton`) — cùng bố cục form (khung ảnh 3:4 + 4 ô + nút), `animate-pulse` (tắt khi reduced motion), `role="status"` kèm chữ ẩn "Đang tải hồ sơ...".
+5. **Lỗi tải** — Alert danger "Không tải được hồ sơ. Vui lòng thử lại." + nút "Thử lại" (quay lại skeleton, gọi lại GET). Không hiện form trống.
+6. **Form** (`ProfileForm`, `noValidate`)
+   - **Vùng ảnh toàn thân** (`BodyPhotoPicker`, cột trái ở desktop): khung 3:4 nền `sand`, ảnh `object-contain` (không méo, không cắt). Ưu tiên hiển thị: ảnh mới chọn (kèm nhãn "Ảnh mới, chưa lưu") > ảnh hiện tại > ô trống "Chưa có ảnh toàn thân". Nút "Chọn ảnh" (chưa có ảnh) hoặc "Chọn ảnh khác"; khi có ảnh mới thêm "Bỏ ảnh đã chọn" (quay lại ảnh hiện tại). Input file ẩn: `accept="image/jpeg,image/png"`, không `multiple`; chọn lại cùng file được. **Hướng dẫn chọn ảnh luôn hiển thị** dưới nút (ảnh toàn thân, đứng thẳng, dọc 3:4 hoặc 9:16, chiều ngắn từ 720 px, JPG/PNG tối đa 5 MB, nền đơn giản).
+   - **Alert thành công / nháp / lỗi chung** (đầu cột phải), xem bảng trạng thái.
+   - **Email** (`TextField` `readOnly`, `aria-readonly`, nền `ink-50`): hint "Email dùng để đăng nhập nên không thể thay đổi."
+   - **Tên hiển thị** (không bắt buộc, `autocomplete="nickname"`): xoá trống rồi lưu thì bỏ tên.
+   - **Chiều cao (cm)**, **Cân nặng (kg)**: đánh dấu bắt buộc từ đầu (dấu `*` + `required` + dòng "Bắt buộc, kể cả khi bạn chỉ muốn đổi ảnh."). `inputmode="decimal"`, không `type="number"`; client đổi `,` thành `.` trước khi kiểm tra và gửi. Hint "Từ 100 đến 250 cm." / "Từ 30 đến 250 kg." (ẩn khi có lỗi).
+   - **Nút "Lưu thay đổi"** (primary): chỉ bật khi form có thay đổi (so với hồ sơ đang lưu, hoặc có ảnh mới); đang gửi thì disabled + spinner + "Đang lưu...", `aria-busy`, các ô `readOnly`, nút ảnh disabled.
+   - Label luôn hiển thị; lỗi nằm dưới ô (icon + chữ, `aria-describedby`, `aria-invalid`).
+
+### Trạng thái và thông báo (khớp bảng "Nhánh lỗi" của flow)
+| Trạng thái | Hiển thị |
+|------------|----------|
+| Đang tải | Skeleton |
+| Tải lỗi (500, lỗi mạng) | "Không tải được hồ sơ. Vui lòng thử lại." + Thử lại |
+| Mặc định (có dữ liệu) | Form điền sẵn; nút Lưu disabled |
+| Hồ sơ mới (chưa có số đo/ảnh) | Hai ô số đo trống, vùng ảnh ở trạng thái trống; nút Lưu bật khi người dùng nhập gì đó |
+| Chiều cao sai (client, không gửi request) | Dưới ô: "Chiều cao phải là số từ 100 đến 250 cm." |
+| Cân nặng sai | Dưới ô: "Cân nặng phải là số từ 30 đến 250 kg." |
+| Tên quá 50 ký tự | Dưới ô: "Tên hiển thị tối đa 50 ký tự." |
+| Sau lỗi client hoặc server theo field | Focus vào ô lỗi đầu tiên; giữ dữ liệu; lỗi của ô tự xoá khi sửa ô đó |
+| Ảnh sai loại | Alert tại vùng ảnh: "Ảnh phải ở định dạng JPG hoặc PNG." Không nhận file, giữ ảnh hiện tại |
+| Ảnh quá 5 MB | "Ảnh không được vượt quá 5 MB." |
+| Ảnh không giải mã được | "Không đọc được ảnh. Vui lòng chọn ảnh khác." |
+| Ảnh sai ratio hoặc nhỏ | Cảnh báo mềm (Alert warning cạnh preview, vẫn nhận file): "Ảnh có thể chưa phù hợp để thử đồ. Nên dùng ảnh toàn thân, đứng thẳng, dọc tỉ lệ 3:4 hoặc 9:16, chiều ngắn từ 720 px." Nút "Chọn ảnh khác" luôn có sẵn |
+| Ảnh hiện tại không tải được: `<img>` hỏng và lần làm mới URL (tối đa một lần cho mỗi lần hỏng) vẫn hỏng hoặc trả `bodyPhotoUrl` `null` | Ô trống "Không tải được ảnh" + nút Thử lại (bắt đầu một lượt làm mới mới); vẫn chọn được ảnh mới. `bodyPhotoUrl` `null` ngay lúc tải trang nghĩa là "Chưa có ảnh toàn thân" vì API không trả path nên client không phân biệt được |
+| Đang lưu | Nút disabled + spinner + "Đang lưu..." |
+| Lưu thành công | Alert success "Lưu thành công."; form cập nhật từ response; bỏ file đã chọn (giữ preview cục bộ nếu server không trả URL ảnh). Thông báo tự xoá khi người dùng sửa form |
+| Lưu xong mà chưa có ảnh | Trong Alert success thêm dòng đậm "Thêm ảnh toàn thân để thử đồ" (nhắc, không chặn) |
+| Khôi phục nháp sau hết phiên (`hadPhoto`) | Alert warning "Đã giữ lại thông tin bạn nhập. Vui lòng chọn lại ảnh." Text được điền lại, nút Lưu bật; mất khi gửi |
+| Lỗi file phía server (`INVALID_FILE_TYPE`, `FILE_TOO_LARGE`) | Cùng câu như lỗi file client, tại vùng ảnh |
+| `INVALID_UPLOAD`, `UPLOAD_FAILED` | Alert chung: "Dữ liệu tải lên không hợp lệ. Vui lòng thử lại." / "Không thể tải ảnh lên lúc này. Vui lòng thử lại." |
+| 500 `INTERNAL_ERROR` | Alert chung "Đã có lỗi xảy ra. Vui lòng thử lại."; giữ toàn bộ dữ liệu và file; nút bật lại |
+| Lỗi mạng | Alert chung "Không thể kết nối tới máy chủ. Vui lòng thử lại."; giữ dữ liệu và file |
+| 401 hết phiên | Chuyển `/login` kèm banner (xử lý ở `apiClient`/`ProtectedRoute`); sau đăng nhập về `/profile` và khôi phục nháp |
 
 ### Responsive
-Một cột `max-w-3xl` ở mọi breakpoint.
+- Mobile (< 640px, hỗ trợ từ 360 px): một cột; vùng ảnh trước (khung 3:4 tối đa `max-w-xs`, căn giữa), rồi các ô; hai ô số đo xếp dọc; nút Lưu full-width; card `p-5`.
+- Tablet (640-1024px): một cột; hai ô số đo cạnh nhau; nút Lưu rộng theo nội dung; card `p-8`.
+- Desktop (> 1024px): hai cột `18rem | 1fr`, ảnh trái, form phải; trang `max-w-5xl`.
 
 ### Navigation
-- Đến từ: `/register` (sau đăng ký thành công), `/login` (sau đăng nhập, khi không có `state.from`), Header (Hồ sơ).
-- Đi tới: logo về `/`; Header "Đăng xuất" về `/`.
+- Đến từ: `/register` (sau đăng ký), `/login` (sau đăng nhập khi không có `state.from`, hoặc về `state.from=/profile`), Header (Hồ sơ).
+- Đi tới: `/` (logo, Header "Đăng xuất").
+
+### Ghi chú
+- Không render HTML từ dữ liệu người dùng (tên hiển thị hiển thị dạng text). Preview ảnh dùng object URL, thu hồi khi bỏ ảnh, thay ảnh, hoặc rời trang.
+- `ProfileForm` và `BodyPhotoPicker` là presentational: `ProfilePage` chịu trách nhiệm gọi dịch vụ ; lỗi server ánh xạ sang field/vùng ảnh/Alert chung ở `ProfilePage.handleSubmit` theo PRD mục 5 (hiển thị `err.message`, trừ `INTERNAL_ERROR`, `NOT_FOUND`, `INVALID_JSON`, `PAYLOAD_TOO_LARGE` dùng thông báo chung).
+- Số đo gửi dạng chuỗi đã chuẩn hoá (`,` thành `.`); form luôn gửi lại giá trị đang hiển thị (D12).
+- Tôn trọng `prefers-reduced-motion` (cấu hình toàn cục).

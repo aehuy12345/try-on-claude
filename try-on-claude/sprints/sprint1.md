@@ -148,18 +148,21 @@ User Stories: US-01, US-02
 **Mô tả:** Cho phép user cập nhật thông tin cá nhân
 
 **Công việc:**
-- [ ] Tạo API endpoint lấy thông tin user (GET /api/user/profile)
-- [ ] Tạo API endpoint cập nhật profile (PUT /api/user/profile)
-- [ ] Implement JWT verification middleware
-- [ ] Tạo UI profile page
-- [ ] Form cập nhật hồ sơ (tên hiển thị, chiều cao, cân nặng; email chỉ đọc, không có phone, theo US-02)
-- [ ] Upload ảnh toàn thân (sử dụng Supabase Storage)
-- [ ] Validate dữ liệu cập nhật
-- [ ] Xử lý upload file
-- [ ] Update UI sau khi save thành công
-- [ ] Bổ sung màn hình `/profile` vào `design/screens.md` (agent-uiux), thay trang tạm của Task 5
-- [ ] Cài `multer`, bọc lỗi multer thành `AppError` theo `design/PRD.md` mục 4.4
-- [ ] Giới hạn `verifyToken` trong `config/jwt.js` với `algorithms: ['HS256']`
+- [x] Tạo API endpoint lấy thông tin user (GET /api/user/profile)
+- [x] Tạo API endpoint cập nhật profile (PUT /api/user/profile)
+- [x] Implement JWT verification middleware
+- [x] Tạo UI profile page
+- [x] Form cập nhật hồ sơ (tên hiển thị, chiều cao, cân nặng; email chỉ đọc, không có phone, theo US-02)
+- [x] Upload ảnh toàn thân (sử dụng Supabase Storage)
+- [x] Validate dữ liệu cập nhật
+- [x] Xử lý upload file
+- [x] Update UI sau khi save thành công
+- [x] Bổ sung màn hình `/profile` vào `design/screens.md` (agent-uiux), thay trang tạm của Task 5
+- [x] Cài `multer`, bọc lỗi multer thành `AppError` theo `design/PRD.md` mục 4.4
+- [x] Giới hạn `verifyToken` trong `config/jwt.js` với `algorithms: ['HS256']`
+- [x] Sửa `logout` trong `AuthContext.jsx`: bản nháp `tryon_profile_draft` nằm ở `sessionStorage` theo `design/flows/profile.md`, code đang xoá nhầm ở `localStorage` (phát hiện khi đọc code cho Task 7). > Ghi chú: `design/screens.md` và `design/flows/upload-body-photo.md` đã cập nhật: API không trả path nên `bodyPhotoUrl` `null` lúc tải trang hiện "Chưa có ảnh toàn thân". `requireAuth` coi `sub` không phải UUID là `TOKEN_INVALID`.
+
+**Acceptance Criteria:** sau khi logout, `sessionStorage` không còn `tryon_profile_draft`.
 
 **Acceptance Criteria:**
 - User có thể xem thông tin profile
@@ -170,6 +173,8 @@ User Stories: US-01, US-02
 - UI phản hồi khi save thành công/thất bại
 
 ## Backlog cho sprint sau
+- **Signed URL cũ còn dùng được sau khi thay ảnh (ưu tiên trung bình, quyết định trước khi deploy):** khi test Task 7, URL ký của ảnh đã xoá vẫn trả `200` (agent-coder ghi nhận, nghi do cache CDN), tối đa tới hết TTL 1 giờ. **Acceptance Criteria:** xác định nguyên nhân; hoặc chấp nhận và ghi vào PRD mục 7, hoặc URL cũ không còn tải được ảnh sau khi thay.
+- **Thứ tự `express.json` và xác thực (ưu tiên thấp):** `express.json` chạy trước `requireAuth` nên `PUT /api/user/profile` không token với JSON hỏng hoặc trên 1 MB trả `400`/`413` thay vì `401`, lệch thứ tự ở PRD 4.4. **Acceptance Criteria:** các request này trả `401`, hoặc PRD ghi rõ ngoại lệ.
 - **Rate limit (ưu tiên cao, làm trước khi deploy):** dùng `express-rate-limit` cho `/api/auth/*` và `PUT /api/user/profile`. **Acceptance Criteria:** vượt ngưỡng trả `429` theo format lỗi chung; request trong ngưỡng không bị ảnh hưởng.
 - **Xử lý tài khoản seed (ưu tiên cao, làm trước khi deploy):** repo public và `design/database/schema.md` ghi mật khẩu dạng thô của 3 tài khoản seed (có một admin), các tài khoản này đang nằm trên project Supabase. **Acceptance Criteria:** môi trường deploy không còn tài khoản seed dùng mật khẩu đã công khai (đã xoá hoặc đổi mật khẩu); đăng nhập bằng mật khẩu cũ thất bại.
 - **Đồng bộ validate email client và server (ưu tiên thấp):** server chặn thêm U+0085 và NUL, `frontend/src/lib/validateRegister.js` chưa chặn. **Acceptance Criteria:** hai bên cùng từ chối các ký tự này; client báo "Email không hợp lệ." mà không gửi request.

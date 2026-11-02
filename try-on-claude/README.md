@@ -66,7 +66,7 @@ cd frontend && npm run dev
 
 - Frontend: <http://localhost:5173>
 - Kiểm tra backend: `curl -i http://localhost:4000/api/health` (200 khi kết nối được Supabase, 503 khi không)
-- Endpoint hiện có: `GET /api/health`, `POST /api/auth/register` (xem `design/PRD.md` mục 4.1)
+- Endpoint hiện có: `GET /api/health`, `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/user/profile`, `PUT /api/user/profile` (multipart, ảnh toàn thân vào bucket private `body-photos`); xem `design/PRD.md` mục 4
 
 ## Lint, format, build
 

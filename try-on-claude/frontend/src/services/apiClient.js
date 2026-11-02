@@ -31,6 +31,11 @@ export function setSessionExpiredHandler(fn) {
 // Only these codes mean the session is gone; INVALID_CREDENTIALS from login must never clear a token (D18).
 const SESSION_EXPIRED_CODES = new Set(['AUTH_REQUIRED', 'TOKEN_EXPIRED', 'TOKEN_INVALID']);
 
+/** True when the error means the session is gone (apiClient already cleared the token). */
+export function isSessionExpiredError(err) {
+  return err instanceof ApiError && SESSION_EXPIRED_CODES.has(err.code);
+}
+
 /**
  * Shared API client. Resolves with parsed JSON (or null for empty bodies).
  * Rejects with ApiError built from the backend format `{ error: { message, code } }`.

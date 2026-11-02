@@ -138,7 +138,7 @@ TTL 1 giờ. Ảnh đã hiển thị vẫn còn trên màn hình; chỉ lần t�
 
 1. `<img onError>` gọi lại `GET /api/user/profile`, **chỉ cập nhật `bodyPhotoUrl`**, không đổ đè các ô form đang sửa. Nếu form có thay đổi thì ghi bản nháp trước ([flow hồ sơ](profile.md#giữ-bản-nháp)).
 2. Tải lại ảnh tối đa một lần cho mỗi lần hỏng, tránh lặp vô hạn.
-3. Vẫn lỗi, hoặc `bodyPhotoUrl` là `null`: hiện ô trống "Không tải được ảnh" kèm nút Thử lại và vẫn cho chọn ảnh mới. Có thể gặp với tài khoản seed `buyer.full` (path chưa có object thật).
+3. Vẫn lỗi, hoặc `bodyPhotoUrl` là `null`: hiện ô trống "Không tải được ảnh" kèm nút Thử lại và vẫn cho chọn ảnh mới. Nút Thử lại bắt đầu một lượt mới (lại được làm mới một lần). Có thể gặp khi object trong Storage không còn dù DB còn path (vd tài khoản seed `buyer.full`). API không trả path nên client không phân biệt "chưa có ảnh" với "có path nhưng không tạo được URL": `bodyPhotoUrl` `null` ngay lúc tải trang luôn hiện "Chưa có ảnh toàn thân"; ô "Không tải được ảnh" chỉ hiện sau khi `<img>` đã hỏng.
 
 ## Ghi chú bảo mật
 

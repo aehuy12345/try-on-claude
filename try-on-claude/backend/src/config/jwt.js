@@ -7,5 +7,6 @@ export function signToken(payload) {
 
 /** @throws {Error} JsonWebTokenError / TokenExpiredError when the token is invalid or expired */
 export function verifyToken(token) {
-  return jwt.verify(token, env.jwtSecret);
+  // Pin the algorithm so tokens signed with another one (including "none") are rejected.
+  return jwt.verify(token, env.jwtSecret, { algorithms: ['HS256'] });
 }
