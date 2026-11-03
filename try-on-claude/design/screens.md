@@ -195,7 +195,7 @@ Xem và cập nhật hồ sơ: tên hiển thị, chiều cao, cân nặng, ản
 | Lưu xong mà chưa có ảnh | Trong Alert success thêm dòng đậm "Thêm ảnh toàn thân để thử đồ" (nhắc, không chặn) |
 | Khôi phục nháp sau hết phiên (`hadPhoto`) | Alert warning "Đã giữ lại thông tin bạn nhập. Vui lòng chọn lại ảnh." Text được điền lại, nút Lưu bật; mất khi gửi |
 | Lỗi file phía server (`INVALID_FILE_TYPE`, `FILE_TOO_LARGE`) | Hiển thị `message` của server tại vùng ảnh. Thường cùng câu như lỗi file client; riêng ảnh quá 70 triệu pixel hoặc vẫn trên 5 MB sau khi xử lý (Sprint 2 Task 7): "Ảnh quá lớn để xử lý. Vui lòng chọn ảnh có độ phân giải hoặc dung lượng nhỏ hơn." |
-| 429 `TOO_MANY_REQUESTS` (Sprint 2 Task 6) | Alert chung "Bạn đã lưu quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau 10 phút."; giữ toàn bộ dữ liệu và file; nút bật lại |
+| 429 `TOO_MANY_REQUESTS` (Sprint 2 Task 6, đã cài đặt) | Alert chung "Bạn đã lưu quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau 10 phút."; giữ toàn bộ dữ liệu và file; nút bật lại |
 | `INVALID_UPLOAD`, `UPLOAD_FAILED` | Alert chung: "Dữ liệu tải lên không hợp lệ. Vui lòng thử lại." / "Không thể tải ảnh lên lúc này. Vui lòng thử lại." |
 | 500 `INTERNAL_ERROR` | Alert chung "Đã có lỗi xảy ra. Vui lòng thử lại."; giữ toàn bộ dữ liệu và file; nút bật lại |
 | Lỗi mạng | Alert chung "Không thể kết nối tới máy chủ. Vui lòng thử lại."; giữ dữ liệu và file |

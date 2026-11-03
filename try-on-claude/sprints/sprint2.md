@@ -161,10 +161,10 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Mỗi `PUT /api/user/profile` có thể chiếm tới 5 MB bộ nhớ. Giao agent-coder. Phần `/api/auth/*` thuộc US-01, xem [Backlog cho sprint sau](#backlog-cho-sprint-sau).
 
 **Công việc:**
-- [ ] Cài `express-rate-limit`
-- [ ] Đặt limiter sau `requireAuth`, `requireMultipart` và trước multer, tính theo user, 20 request mỗi 10 phút (D21, D22)
-- [ ] Trả `429` theo format lỗi chung
-- [ ] Kiểm tra UI hiện thông báo tiếng Việt (đọc code thấy `ProfilePage` đã hiện `err.message`, sửa nếu chạy thử không đúng)
+- [x] Cài `express-rate-limit`
+- [x] Đặt limiter sau `requireAuth`, `requireMultipart` và trước multer, tính theo user, 20 request mỗi 10 phút (D21, D22)
+- [x] Trả `429` theo format lỗi chung
+- [x] Kiểm tra UI hiện thông báo tiếng Việt (đọc code thấy `ProfilePage` đã hiện `err.message`, sửa nếu chạy thử không đúng)
 
 **Acceptance Criteria:**
 - Vượt ngưỡng trả `429` đúng format lỗi chung
@@ -172,6 +172,19 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - Request bị chặn không đi tới multer
 - Request `415` không bị đếm; request thất bại có bị đếm
 - UI hiện thông báo tiếng Việt và giữ nguyên dữ liệu form
+
+**Kết quả (2026-11-03):** đạt đủ acceptance criteria, không phải sửa frontend. Cài `express-rate-limit` 8.7.3, limiter ở `backend/src/middlewares/profileRateLimit.js`.
+
+- **Code:** `npm test` exit 0, 129 pass, 0 fail (15 test mới, không phải sửa test cũ). Lint backend, frontend và build frontend exit 0. Bỏ limiter thì 11 test fail; đổi limiter ra sau multer, trước `requireMultipart`, trước `requireAuth` lần lượt 2, 2, 51 test fail.
+- **API (`NODE_ENV=production`, Supabase thật):** sau 25 request `415`, 20 request tiếp theo vẫn trả `400`; request thứ 21 trả `429` đúng format, có `Retry-After`, `RateLimit`, `no-store`, CORS đúng origin. Khi hết lượt, file 6 MB trả `429`; user khác vẫn trả `400`; không token trả `401`; origin lạ không có `Access-Control-Allow-Origin`.
+- **Giao diện (Chrome headless, 1280 px và 360 px):** hết lượt rồi lưu kèm ảnh 4,8 MB: trình duyệt nhận `429` thật, không phải lỗi mạng; một request duy nhất; alert đúng thông báo; số đo, tên, preview ảnh còn nguyên; nút Lưu bật lại. Không tràn ngang.
+- **Dọn dữ liệu:** tài khoản QA đã xoá, `profiles` 3 dòng, bucket 0 object như trước. Log backend không có token, URL ký, email.
+
+**Chưa kiểm tra và lý do:**
+- **Bộ đếm reset sau 10 phút:** chưa chờ hết cửa sổ, cũng chưa có test; hiện chỉ xác nhận cấu hình qua header `w=600` và `t` từ 600 trở xuống.
+- **Nhiều instance, restart:** đã ghi ở PRD mục 7 (D24), có backlog.
+- **Sau proxy thật:** thử `X-Forwarded-For` trên local không thấy cảnh báo `ERR_ERL_*`, chưa thử sau reverse proxy.
+- **Điện thoại thật:** 360 px chạy bằng giả lập của Chrome.
 
 ---
 

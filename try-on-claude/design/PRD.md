@@ -50,7 +50,7 @@ Ngoài phạm vi Sprint 1: xác minh email, quên/đổi mật khẩu, xoá ản
 | D18 | Nhận biết hết phiên ở frontend | Theo `code` (`AUTH_REQUIRED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`), không theo URL hay status | `INVALID_CREDENTIALS` của login cũng là 401 nhưng không được redirect |
 | D19 | Hạn token ở frontend | Không tự giải mã `exp`; guard chỉ xét có token hay không, server là bên quyết định | Tránh lỗi do đồng hồ máy khách sai và không cần thêm logic giải mã. Đánh đổi: token hết hạn chỉ bị phát hiện ở lần gọi API kế tiếp |
 
-**Gia cố Sprint 2.** D20–D31 là thiết kế đích của Sprint 2 Task 4–7, người dùng đã chốt ngày 2026-11-02 (D31 thuộc Task 5). D20 (Task 4) đã cài đặt trong code; D31 được đổi trong code cùng đợt với tài liệu này. Code chưa làm theo D21–D30; phần liên quan trong tài liệu sẽ đúng với code sau khi Task 6, 7 xong.
+**Gia cố Sprint 2.** D20–D31 là thiết kế đích của Sprint 2 Task 4–7, người dùng đã chốt ngày 2026-11-02 (D31 thuộc Task 5). D20 (Task 4), D21–D24 (Task 6) đã cài đặt trong code; D31 được đổi trong code cùng đợt với tài liệu này. Code chưa làm theo D25–D30 (Task 7); phần liên quan trong tài liệu sẽ đúng với code sau khi Task 7 xong.
 
 | # | Vấn đề | Quyết định | Lý do |
 |---|--------|-----------|-------|
@@ -186,7 +186,7 @@ Auth: Bearer. Request bắt buộc `multipart/form-data`:
 
 Part text khác bị bỏ qua (D11). Response `200`: đối tượng hồ sơ như 4.3, kèm `bodyPhotoUrl` mới.
 
-Ba mục dưới và các dòng có ghi D2x trong bảng lỗi là hành vi đích của Sprint 2, đã chốt, chưa cài đặt.
+Thứ tự middleware và limiter dưới đây đã cài đặt (Task 4, 6). Mục xử lý ảnh và các dòng lỗi ghi D25–D28 là hành vi đích của Task 7, đã chốt, chưa cài đặt.
 
 **Thứ tự middleware (D20, D21; Task 4, 6):** `cors` → `Cache-Control: no-store` → `requireAuth` → `requireMultipart` → limiter → multer → controller. Route này không có `express.json`, nên body JSON hỏng hoặc trên 1 MB nhận `401` khi không có token, `415` khi có token.
 
@@ -225,7 +225,7 @@ Thay đổi cần làm ở `apiClient.js` và route (Task 5–7):
 
 ## 6. Phi chức năng
 
-- **Bảo mật:** bcrypt cost 10. Không log mật khẩu, token, số đo, ảnh hay signed URL. `verifyToken` chỉ nhận `algorithms: ['HS256']`. CORS chỉ `CLIENT_URL`. `id` luôn lấy từ JWT, không nhận từ request. Frontend không render HTML từ dữ liệu người dùng. `PUT /api/user/profile` có rate limit theo user (D22, sau Task 6).
+- **Bảo mật:** bcrypt cost 10. Không log mật khẩu, token, số đo, ảnh hay signed URL. `verifyToken` chỉ nhận `algorithms: ['HS256']`. CORS chỉ `CLIENT_URL`. `id` luôn lấy từ JWT, không nhận từ request. Frontend không render HTML từ dữ liệu người dùng. `PUT /api/user/profile` có rate limit theo user (D22, đã cài đặt ở Task 6).
 - **Quyền riêng tư:** bucket private, signed URL chỉ trả cho chính chủ, không lưu signed URL lâu dài ở client. Ảnh tải lên được bỏ EXIF, GPS và mọi metadata trước khi vào Storage (D25, sau Task 7). Log lỗi xử lý ảnh chỉ ghi `err.message`, không ghi nội dung file.
 - **Hiệu năng & mạng yếu:** nút gửi bị vô hiệu kèm trạng thái đang xử lý; `PUT` dùng `AbortSignal.timeout(60000)`. Gửi lại sau lỗi mạng là an toàn (ảnh mới thay ảnh trước đó). Xử lý ảnh 12 MP mất khoảng 0,2 giây, ảnh 64 MP khoảng 0,8 giây (đo trên máy dev bằng ảnh tổng hợp).
 - **Usability:** form dùng token Input trong `design-system.md`; lỗi hiển thị bằng chữ dưới field; hoạt động từ 360 px.
