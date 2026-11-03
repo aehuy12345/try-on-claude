@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import Alert from '../ui/Alert.jsx';
 import Button from '../ui/Button.jsx';
 
@@ -16,6 +16,8 @@ const GUIDE = [
  * - currentUrl: signed URL ảnh đang lưu (null nếu chưa có).
  * - photoFailed: bool, ảnh hiện tại không tải được -> hiện ô "Không tải được ảnh" + Thử lại.
  * - error: chuỗi lỗi file (không nhận file). warning: cảnh báo mềm về ratio (vẫn nhận file).
+ * - errorFocusSignal: số tăng mỗi khi cha muốn đưa lỗi vào màn hình (lỗi do server trả sau khi Lưu).
+ *   Mỗi lần đổi, dòng lỗi được focus + cuộn tới, kể cả khi câu lỗi giống hệt lần trước.
  * - disabled: khoá khi đang lưu.
  * - onSelect(file): người dùng chọn 1 file. onClear(): bỏ ảnh mới chọn (quay lại ảnh hiện tại).
  * - onImageError(): <img> của ảnh hiện tại báo lỗi (cha thử làm mới URL tối đa một lần).
@@ -28,6 +30,7 @@ export default function BodyPhotoPicker({
   photoFailed = false,
   error = '',
   warning = '',
+  errorFocusSignal = 0,
   disabled = false,
   onSelect,
   onClear,
@@ -36,11 +39,18 @@ export default function BodyPhotoPicker({
   onRetry,
 }) {
   const inputRef = useRef(null);
+  const errorRef = useRef(null);
   const id = useId();
   const errorId = `${id}-error`;
   const guideId = `${id}-guide`;
   const shown = previewUrl || currentUrl;
   const hasImage = Boolean(shown) && !(photoFailed && !previewUrl);
+
+  // Focus sau commit để dòng lỗi đã có trong DOM. Cuộn theo scroll-padding-top của <html> nên
+  // không bị header cố định che; scroll-behavior smooth đã tắt khi prefers-reduced-motion.
+  useEffect(() => {
+    if (errorFocusSignal) errorRef.current?.focus();
+  }, [errorFocusSignal]);
 
   const handleChange = (e) => {
     const file = e.target.files?.[0];
@@ -134,7 +144,9 @@ export default function BodyPhotoPicker({
 
       {error && (
         <Alert tone="danger" className="mt-4">
-          <span id={errorId}>{error}</span>
+          <span id={errorId} ref={errorRef} tabIndex={-1} className="outline-none">
+            {error}
+          </span>
         </Alert>
       )}
       {warning && !error && (

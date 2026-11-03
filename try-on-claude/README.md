@@ -68,6 +68,20 @@ cd frontend && npm run dev
 - Kiểm tra backend: `curl -i http://localhost:4000/api/health` (200 khi kết nối được Supabase, 503 khi không)
 - Endpoint hiện có: `GET /api/health`, `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/user/profile`, `PUT /api/user/profile` (multipart, ảnh toàn thân vào bucket private `body-photos`); xem `design/PRD.md` mục 4
 
+## Tài khoản dev để test thủ công
+
+Repo không chứa tài khoản mẫu hay mật khẩu. Tự tạo tài khoản ở môi trường dev:
+
+- **Tài khoản thường:** đăng ký qua trang `/register` của app, hoặc `POST /api/auth/register` (body gồm `email`, `password`, `confirmPassword`).
+- **Admin:** đăng ký như trên, rồi chạy trong Supabase SQL Editor (chỉ ở môi trường dev):
+
+  ```sql
+  update public.profiles set role = 'admin' where email = '<email>';
+  ```
+
+  Sau đó đăng nhập lại để lấy JWT mới, vì JWT cũ giữ role cũ tới khi hết hạn (xem `design/database/schema.md` mục 8).
+- Không ghi mật khẩu vào repo (code, SQL, tài liệu).
+
 ## Lint, format, build
 
 ```bash
@@ -91,7 +105,7 @@ Frontend chưa có test.
 - `frontend/`: React app
   - `src/{components,pages,layouts,routes,services,hooks,context,lib,utils,assets}`
 - `design/`: PRD, flows, database schema, screens
-- `migrations/`: SQL migration và seed cho Supabase
+- `migrations/`: SQL migration cho Supabase
 - `sprints/`: user stories + sprint backlog
 - `PB.md`: product backlog
 

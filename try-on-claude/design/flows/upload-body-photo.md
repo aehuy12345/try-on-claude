@@ -1,6 +1,6 @@
 # Flow: Upload và thay ảnh toàn thân
 
-US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16, D25–D31. Các bước xử lý ảnh bằng `sharp` là hành vi đích của Sprint 2 Task 7, đã chốt, chưa cài đặt. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
+US-02 (sprint backlog gọi là "avatar"). Là phần file của `PUT /api/user/profile` ([PRD 4.4](../PRD.md#44-put-apiuserprofile), [flow hồ sơ](profile.md)), không có endpoint riêng. Quyết định: D9, D10, D13, D15, D16, D25–D31. Các bước xử lý ảnh bằng `sharp` đã cài đặt ở Sprint 2 Task 7. Bucket và thứ tự thay ảnh: [schema mục 4](../database/schema.md#4-storage-bucket-body-photos).
 
 ## Chọn ảnh ở client
 
@@ -189,7 +189,7 @@ TTL 5 phút ([D31](../PRD.md#2-quyết-định-đã-chốt)). Ảnh đã hiển 
 
 1. `<img onError>` gọi lại `GET /api/user/profile`, **chỉ cập nhật `bodyPhotoUrl`**, không đổ đè các ô form đang sửa. Nếu form có thay đổi thì ghi bản nháp trước ([flow hồ sơ](profile.md#giữ-bản-nháp)).
 2. Tải lại ảnh tối đa một lần cho mỗi lần hỏng, tránh lặp vô hạn.
-3. Vẫn lỗi, hoặc `bodyPhotoUrl` là `null`: hiện ô trống "Không tải được ảnh" kèm nút Thử lại và vẫn cho chọn ảnh mới. Nút Thử lại bắt đầu một lượt mới (lại được làm mới một lần). Có thể gặp khi object trong Storage không còn dù DB còn path (vd tài khoản seed `buyer.full`). API không trả path nên client không phân biệt "chưa có ảnh" với "có path nhưng không tạo được URL": `bodyPhotoUrl` `null` ngay lúc tải trang luôn hiện "Chưa có ảnh toàn thân"; ô "Không tải được ảnh" chỉ hiện sau khi `<img>` đã hỏng.
+3. Vẫn lỗi, hoặc `bodyPhotoUrl` là `null`: hiện ô trống "Không tải được ảnh" kèm nút Thử lại và vẫn cho chọn ảnh mới. Nút Thử lại bắt đầu một lượt mới (lại được làm mới một lần). Có thể gặp khi object trong Storage không còn dù DB còn path. API không trả path nên client không phân biệt "chưa có ảnh" với "có path nhưng không tạo được URL": `bodyPhotoUrl` `null` ngay lúc tải trang luôn hiện "Chưa có ảnh toàn thân"; ô "Không tải được ảnh" chỉ hiện sau khi `<img>` đã hỏng.
 
 ## Ghi chú bảo mật
 

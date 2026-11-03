@@ -59,6 +59,9 @@ export default function ProfileForm({
   const [submitting, setSubmitting] = useState(false);
   const [photo, setPhoto] = useState(EMPTY_PHOTO);
   const [checking, setChecking] = useState(false); // đang kiểm tra file vừa chọn
+  const [photoErrorSignal, setPhotoErrorSignal] = useState(0); // tăng khi lỗi ảnh từ server cần vào màn hình
+  const [noticeSignal, setNoticeSignal] = useState(0); // tăng khi thông báo chung (thành công/lỗi chung) cần vào màn hình
+  const noticeRef = useRef(null);
   const photoRef = useRef(EMPTY_PHOTO); // bản mới nhất của `photo`, dùng trong handler bất đồng bộ
   const [localUrl, setLocalUrl] = useState(null); // preview cục bộ khi server không trả signed URL
   const urlsRef = useRef(new Set());
@@ -68,6 +71,12 @@ export default function ProfileForm({
     const urls = urlsRef.current;
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, []);
+
+  // Focus sau commit để thông báo đã có trong DOM. Nút Lưu bị disabled trong lúc gửi nên focus đang ở
+  // BODY; đưa focus vào thông báo để cuộn tới (theo scroll-padding-top của <html>) và trình đọc màn hình đọc.
+  useEffect(() => {
+    if (noticeSignal) noticeRef.current?.focus();
+  }, [noticeSignal]);
 
   const revoke = (url) => {
     if (!url) return;
@@ -175,13 +184,18 @@ export default function ProfileForm({
         commitPhoto({ ...photoRef.current, error: '' });
       }
       setSaved(true);
+      setNoticeSignal((n) => n + 1);
       return;
     }
     setFormError(result?.formError ?? '');
     setErrors(result?.fieldErrors ?? {});
     if (result?.photoError) commitPhoto({ ...photoRef.current, error: result.photoError });
+    // Chỉ một nơi giữ focus, ưu tiên: lỗi field (sửa được ngay tại ô; PRD 4.4: hiếm khi có cả lỗi file),
+    // rồi lỗi ảnh, rồi thông báo chung. Phần không được focus vẫn hiện với role của Alert.
     const firstServer = FIELDS.find((k) => result?.fieldErrors?.[k]);
     if (firstServer) form.elements[firstServer]?.focus();
+    else if (result?.photoError) setPhotoErrorSignal((n) => n + 1);
+    else if (result?.formError) setNoticeSignal((n) => n + 1);
   };
 
   return (
@@ -197,6 +211,7 @@ export default function ProfileForm({
         photoFailed={photoFailed && (Boolean(profile.bodyPhotoUrl) || !localUrl)}
         error={photo.error}
         warning={photo.warning}
+        errorFocusSignal={photoErrorSignal}
         disabled={submitting}
         onSelect={handleSelect}
         onClear={handleClear}
@@ -207,13 +222,21 @@ export default function ProfileForm({
 
       <div className="space-y-5">
         {showDraftNotice && <Alert tone="warning">{PROFILE_MESSAGES.DRAFT_RESTORED}</Alert>}
-        {formError && <Alert tone="danger">{formError}</Alert>}
+        {formError && (
+          <Alert tone="danger">
+            <div ref={noticeRef} tabIndex={-1} className="outline-none">
+              {formError}
+            </div>
+          </Alert>
+        )}
         {saved && (
           <Alert tone="success">
-            {PROFILE_MESSAGES.SAVED}
-            {!currentUrl && (
-              <span className="mt-1 block font-medium">{PROFILE_MESSAGES.ADD_PHOTO}</span>
-            )}
+            <div ref={noticeRef} tabIndex={-1} className="outline-none">
+              {PROFILE_MESSAGES.SAVED}
+              {!currentUrl && (
+                <span className="mt-1 block font-medium">{PROFILE_MESSAGES.ADD_PHOTO}</span>
+              )}
+            </div>
           </Alert>
         )}
 

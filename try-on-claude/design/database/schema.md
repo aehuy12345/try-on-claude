@@ -77,14 +77,14 @@ erDiagram
 | Path object | `<user_id>/<timestamp_ms>.<ext>`, `ext` ∈ `jpg`, `png` (`.jpeg` chuẩn hoá thành `.jpg`). Vd `11111111-1111-4111-8111-111111111111/1761609600000.jpg` |
 
 **Private + signed URL (lý do):** ảnh toàn thân kèm số đo là dữ liệu nhạy cảm; bucket public cho phép bất kỳ ai có link xem vĩnh viễn. Vì vậy:
-- DB lưu **path**, không lưu URL vĩnh viễn. (US-02 ghi "URL được lưu trong hồ sơ" → điều chỉnh: lưu path, API trả URL ký tạm thời.)
+- DB lưu **path**, không lưu URL vĩnh viễn; API trả URL ký tạm thời.
 - Backend tạo signed URL (`createSignedUrl(path, 300)`, TTL 5 phút, [D31](../PRD.md#2-quyết-định-đã-chốt)) mỗi lần trả profile. Frontend không lưu URL lâu dài; hết hạn thì gọi lại `GET /api/user/profile`.
 - Timestamp trong tên file: mỗi lần thay ảnh có path mới → URL của ảnh mới không bị trả nhầm ảnh cũ từ cache. Việc này không làm URL đã cấp của ảnh cũ hết tác dụng ngay, xem [PRD mục 7](../PRD.md#7-rủi-ro-đã-chấp-nhận-và-đề-xuất-backlog).
 - Sprint sau (GenAI thử đồ) backend đọc ảnh bằng service role/signed URL, không cần public.
 
 **Thay ảnh (US-02: ảnh mới thay ảnh cũ, chỉ 1 ảnh/người):**
 
-Trước bước 1 (Sprint 2 Task 7, đã chốt, chưa cài đặt): encode lại ảnh bằng `sharp` để bỏ metadata, kết quả không vượt `file_size_limit` ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt)). Lỗi ở đây thì chưa gọi Storage hay DB.
+Trước bước 1 (Sprint 2 Task 7, đã cài đặt): encode lại ảnh bằng `sharp` để bỏ metadata, kết quả không vượt `file_size_limit` ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt)). Lỗi ở đây thì chưa gọi Storage hay DB.
 
 1. Upload ảnh mới vào path mới.
 2. Cập nhật `profiles.body_photo_path` = path mới.
@@ -102,15 +102,7 @@ Xoá object luôn qua Storage API, không `DELETE` trực tiếp trên `storage.
 
 ## 6. Dữ liệu mẫu (dev)
 
-`migrations/003_seed_profiles.sql` – **chỉ chạy ở dev**. Hash bcrypt thật (cost 10), đã verify bằng `bcrypt.compare`.
-
-| Email | Mật khẩu test | role | Trạng thái | Dùng cho |
-|-------|---------------|------|------------|----------|
-| `buyer.full@example.com` | `Test@1234` | user | "Lan Nguyễn", 162.0 cm, 50.5 kg, có `body_photo_path` | Login (US-01); xem/sửa hồ sơ có dữ liệu, thay ảnh (US-02) |
-| `buyer.new@example.com` | `Test@1234` | user | Chưa có tên, số đo, ảnh | Hồ sơ trống, nhập lần đầu (US-02) |
-| `admin@example.com` | `Admin@1234` | admin | Không có số đo/ảnh | Kiểm tra role; dùng ở Sprint sau |
-
-`body_photo_path` của `buyer.full` chưa có object thật. Muốn hiển thị ảnh: upload một ảnh jpg vào đúng path `11111111-1111-4111-8111-111111111111/1761609600000.jpg` (Dashboard → Storage), hoặc login và upload qua app.
+Không có seed. Repo public nên không commit tài khoản mẫu kèm mật khẩu hay hash (seed cũ `003` đã gỡ, các tài khoản đó đã xoá khỏi DB). Tài khoản dev tự tạo: đăng ký qua app hoặc `POST /api/auth/register`; muốn có admin thì đổi `role` bằng SQL ở môi trường dev (role trong JWT cũ giữ nguyên tới khi hết hạn, xem mục 8). Hướng dẫn chi tiết: mục "Tài khoản dev để test thủ công" trong [`README.md`](../../README.md).
 
 ## 7. API contract liên quan
 
@@ -128,7 +120,7 @@ Response profile đề xuất:
 ```json
 {
   "id": "uuid",
-  "email": "buyer.full@example.com",
+  "email": "lan@example.com",
   "role": "user",
   "displayName": "Lan Nguyễn",
   "heightCm": 162,
@@ -147,5 +139,5 @@ Response profile đề xuất:
 - **Select tường minh** các cột cần, không `select('*')`; chỉ lấy `password_hash` trong login.
 - **JWT:** payload `{ sub: id, role }`. Đổi role thì token cũ vẫn mang role cũ đến khi hết hạn → endpoint Admin (sprint sau) nên kiểm tra lại `role` trong DB.
 - **Số đo:** validate 100–250 cm / 30–250 kg, làm tròn 1 chữ số thập phân. PostgREST trả `numeric` dạng JSON number.
-- **Ảnh:** validate magic bytes (JPEG/PNG, không tin MIME khai báo) + ≤ 5 MB ở backend, rồi encode lại ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt), sau Task 7) trước khi upload (bucket chặn thêm một lớp). Upload với `contentType` và `ext` suy ra từ magic bytes, path `${userId}/${Date.now()}.${ext}`, theo thứ tự thay ảnh ở mục 4. `createSignedUrl` lỗi (vd object chưa tồn tại như seed) → `bodyPhotoUrl: null`, không trả 500.
+- **Ảnh:** validate magic bytes (JPEG/PNG, không tin MIME khai báo) + ≤ 5 MB ở backend, rồi encode lại ([PRD D25–D29](../PRD.md#2-quyết-định-đã-chốt), Task 7) trước khi upload (bucket chặn thêm một lớp). Upload với `contentType` và `ext` suy ra từ magic bytes, path `${userId}/${Date.now()}.${ext}`, theo thứ tự thay ảnh ở mục 4. `createSignedUrl` lỗi (vd object không còn trong Storage) → `bodyPhotoUrl: null`, không trả 500.
 - `updated_at` do trigger cập nhật, backend không cần gửi.

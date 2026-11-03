@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --import ./test/setup.js --test test/profile.validator.test.js test/profile.http.test.js test/body-parsing.http.test.js test/auth-token.http.test.js test/signed-url-ttl.test.js test/rate-limit.http.test.js",
+    "test": "node --import ./test/setup.js --test test/profile.validator.test.js test/profile.http.test.js test/body-parsing.http.test.js test/auth-token.http.test.js test/signed-url-ttl.test.js test/rate-limit.http.test.js test/body-photo.processor.test.js test/body-photo.http.test.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -20,7 +20,8 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.3",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

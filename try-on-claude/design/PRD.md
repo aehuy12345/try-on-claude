@@ -50,7 +50,7 @@ Ngoài phạm vi Sprint 1: xác minh email, quên/đổi mật khẩu, xoá ản
 | D18 | Nhận biết hết phiên ở frontend | Theo `code` (`AUTH_REQUIRED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`), không theo URL hay status | `INVALID_CREDENTIALS` của login cũng là 401 nhưng không được redirect |
 | D19 | Hạn token ở frontend | Không tự giải mã `exp`; guard chỉ xét có token hay không, server là bên quyết định | Tránh lỗi do đồng hồ máy khách sai và không cần thêm logic giải mã. Đánh đổi: token hết hạn chỉ bị phát hiện ở lần gọi API kế tiếp |
 
-**Gia cố Sprint 2.** D20–D31 là thiết kế đích của Sprint 2 Task 4–7, người dùng đã chốt ngày 2026-11-02 (D31 thuộc Task 5). D20 (Task 4), D21–D24 (Task 6) đã cài đặt trong code; D31 được đổi trong code cùng đợt với tài liệu này. Code chưa làm theo D25–D30 (Task 7); phần liên quan trong tài liệu sẽ đúng với code sau khi Task 7 xong.
+**Gia cố Sprint 2.** D20–D31 là thiết kế của Sprint 2 Task 4–7, người dùng đã chốt ngày 2026-11-02 (D31 thuộc Task 5). D20 (Task 4), D21–D24 (Task 6) đã cài đặt trong code; D31 được đổi trong code cùng đợt với tài liệu này. D25–D30 (Task 7) đã cài đặt trong code (`backend/src/services/bodyPhoto.processor.js`).
 
 | # | Vấn đề | Quyết định | Lý do |
 |---|--------|-----------|-------|
@@ -84,7 +84,7 @@ Client và server áp dụng cùng quy tắc. Server là bên quyết định.
 
 **Khuyến nghị ảnh (chỉ cảnh báo, D15):** chiều ngắn ≥ 720 px và tỉ lệ rộng/cao trong khoảng ±0,03 quanh 0,75 (3:4) hoặc 0,5625 (9:16). Chi tiết ở [flow ảnh](flows/upload-body-photo.md).
 
-**Chỉ server kiểm tra (Sprint 2 Task 7, D27, D28):** ảnh phải giải mã được và không quá 70 000 000 pixel. Client chỉ kiểm tra giải mã được bằng phần tử `Image`, không kiểm tra số pixel.
+**Chỉ server kiểm tra (D27, D28):** ảnh phải giải mã được và không quá 70 000 000 pixel. Client chỉ kiểm tra giải mã được bằng phần tử `Image`, không kiểm tra số pixel.
 
 ## 4. API contract
 
@@ -159,7 +159,7 @@ Auth: Bearer. Response `200`: đối tượng hồ sơ, không bọc thêm lớp
 ```json
 {
   "id": "uuid",
-  "email": "buyer.full@example.com",
+  "email": "lan@example.com",
   "role": "user",
   "displayName": "Lan Nguyễn",
   "heightCm": 162,
@@ -186,13 +186,13 @@ Auth: Bearer. Request bắt buộc `multipart/form-data`:
 
 Part text khác bị bỏ qua (D11). Response `200`: đối tượng hồ sơ như 4.3, kèm `bodyPhotoUrl` mới.
 
-Thứ tự middleware và limiter dưới đây đã cài đặt (Task 4, 6). Mục xử lý ảnh và các dòng lỗi ghi D25–D28 là hành vi đích của Task 7, đã chốt, chưa cài đặt.
+Thứ tự middleware, limiter và xử lý ảnh dưới đây đã cài đặt (Task 4, 6, 7).
 
 **Thứ tự middleware (D20, D21; Task 4, 6):** `cors` → `Cache-Control: no-store` → `requireAuth` → `requireMultipart` → limiter → multer → controller. Route này không có `express.json`, nên body JSON hỏng hoặc trên 1 MB nhận `401` khi không có token, `415` khi có token.
 
 **Limiter (D22–D24; Task 6):** `express-rate-limit`, tạo một lần lúc nạp module: `windowMs: 600000`, `limit: 20`, `keyGenerator: (req) => req.userId`, `standardHeaders: 'draft-8'`, `legacyHeaders: false`, `handler` gọi `next(new AppError(429, ...))`. Giữ mặc định của `skipFailedRequests`, `skipSuccessfulRequests` (`false`) và `validate`. Cửa sổ cố định, bắt đầu từ request đầu tiên; request bị chặn không kéo dài cửa sổ.
 
-**Xử lý ảnh (D25–D29; Task 7):** làm ở service, không đưa vào `parseProfileInput` để validator vẫn đồng bộ. Các bước xem [flow ảnh](flows/upload-body-photo.md).
+**Xử lý ảnh (D25–D29; Task 7):** làm ở service (`bodyPhoto.processor.js`, gọi từ `updateProfile`), không đưa vào `parseProfileInput` để validator vẫn đồng bộ. Các bước xem [flow ảnh](flows/upload-body-photo.md).
 
 Multer dùng `memoryStorage`, `limits: { fileSize: 5242880, files: 1, fields: 10, fieldSize: 1024 }`, `.single('bodyPhoto')`. Middleware bọc multer đổi mọi lỗi thành `AppError` theo bảng dưới, vì `errorHandler.js` không biết `MulterError` và sẽ trả 500.
 
@@ -226,7 +226,7 @@ Thay đổi cần làm ở `apiClient.js` và route (Task 5–7):
 ## 6. Phi chức năng
 
 - **Bảo mật:** bcrypt cost 10. Không log mật khẩu, token, số đo, ảnh hay signed URL. `verifyToken` chỉ nhận `algorithms: ['HS256']`. CORS chỉ `CLIENT_URL`. `id` luôn lấy từ JWT, không nhận từ request. Frontend không render HTML từ dữ liệu người dùng. `PUT /api/user/profile` có rate limit theo user (D22, đã cài đặt ở Task 6).
-- **Quyền riêng tư:** bucket private, signed URL chỉ trả cho chính chủ, không lưu signed URL lâu dài ở client. Ảnh tải lên được bỏ EXIF, GPS và mọi metadata trước khi vào Storage (D25, sau Task 7). Log lỗi xử lý ảnh chỉ ghi `err.message`, không ghi nội dung file.
+- **Quyền riêng tư:** bucket private, signed URL chỉ trả cho chính chủ, không lưu signed URL lâu dài ở client. Ảnh tải lên được bỏ EXIF, GPS và mọi metadata trước khi vào Storage (D25, Task 7). Log lỗi xử lý ảnh chỉ ghi `err.message`, không ghi nội dung file.
 - **Hiệu năng & mạng yếu:** nút gửi bị vô hiệu kèm trạng thái đang xử lý; `PUT` dùng `AbortSignal.timeout(60000)`. Gửi lại sau lỗi mạng là an toàn (ảnh mới thay ảnh trước đó). Xử lý ảnh 12 MP mất khoảng 0,2 giây, ảnh 64 MP khoảng 0,8 giây (đo trên máy dev bằng ảnh tổng hợp).
 - **Usability:** form dùng token Input trong `design-system.md`; lỗi hiển thị bằng chữ dưới field; hoạt động từ 360 px.
 
@@ -242,7 +242,7 @@ Các mục dưới **chưa được xử lý**. Thêm vào backlog nếu ngườ
 | Bộ nhớ đỉnh khi xử lý ảnh (D27, D29) | Một ảnh 64 MP xoay 90° đạt đỉnh khoảng 610 MB, ảnh 12 MP khoảng 160 MB (đo trên máy dev). Instance quá nhỏ có thể bị hệ điều hành dừng process, lúc đó không trả được `500` | Instance deploy từ 1 GB RAM, hoặc giảm giới hạn pixel (50 MP đỉnh khoảng 490 MB, 24 MP khoảng 260 MB) |
 | Token không thu hồi được | Token lộ dùng được tới 24 giờ, logout không vô hiệu nó | Khi cần: danh sách thu hồi hoặc refresh token |
 | Ảnh đã có trước Task 7 vẫn giữ EXIF (D30) | Ngày 2026-11-02 bucket trống nên chưa có ảnh nào như vậy; ảnh tải lên trước khi Task 7 xong sẽ giữ metadata cho tới khi được thay hoặc xoá | Kiểm tra bucket và xoá ảnh test trước khi deploy |
-| `failOn: 'warning'` có thể từ chối ảnh trình duyệt vẫn đọc được (D28) | Người dùng được báo chọn ảnh khác dù preview hiển thị bình thường | Thử với ảnh điện thoại thật ở Task 7. Nếu từ chối nhầm thì hạ xuống `error` (vẫn từ chối file cụt) |
+| `failOn: 'warning'` có thể từ chối ảnh trình duyệt vẫn đọc được (D28) | Người dùng được báo chọn ảnh khác dù preview hiển thị bình thường | Đã thử 28 ảnh điện thoại mẫu công khai, đa số máy đời cũ, không từ chối nhầm ảnh nào (Sprint 2 Task 7). Chưa thử ảnh từ máy người dùng. Nếu từ chối nhầm thì hạ xuống `error` (vẫn từ chối file cụt) |
 | File JPEG hỏng giữa dữ liệu có thể không phát hiện được | `sharp` giải mã thành công, ảnh lưu bị nhiễu; người dùng thấy ngay trên preview | Chấp nhận |
 | Encode lại không giữ nguyên ảnh gốc (D25, D26) | JPEG giảm chất lượng nhẹ; APNG chỉ còn khung đầu; PNG palette có thể lớn lên và bị từ chối | Chấp nhận với ảnh toàn thân |
 | URL ký đã cấp không thu hồi được (D31, **rủi ro đã chấp nhận**) | Thay ảnh hoặc xoá ảnh không làm URL cũ hết tác dụng ngay: CDN có thể còn trả ảnh sau khi xoá, trình duyệt đã tải có thể giữ tới hạn. **Thời hạn tối đa: 5 phút tính từ lúc cấp URL, không phải từ lúc thay ảnh.** **Đã đo** (tại một PoP `HKG`, ngày 2026-11-02): 101/103 object hết trả ảnh trong khoảng 1 phút sau khi xoá (lần `200` cuối muộn nhất ở 56,8 s); token hết hạn chặn bản cache đang HIT với TTL 90, 300, 600. **Chưa đo, chỉ là suy luận:** 2/103 object trả ảnh trở lại sau khi đã `400`, một object vẫn trả ảnh ở 540 s lúc dừng đo; chưa object nào như vậy được theo dõi tới hạn token, nên giới hạn 5 phút với trường hợp này chưa được chứng minh. PoP khác, trình duyệt khác, điện thoại thật cũng chưa đo. Xoá ảnh cũ lỗi: object còn nguyên, URL đã cấp vẫn chỉ dùng được tới hạn token | Chấp nhận với TTL 5 phút. Thay đổi gói Supabase thì đo lại. `cacheControl` không có tác dụng trên URL ký; purge bị `403` trên project hiện tại. User story xoá ảnh, xoá tài khoản sau này không được hứa "xoá là mất ngay". Xem lại phương án proxy ảnh qua backend khi làm user story xoá ảnh |

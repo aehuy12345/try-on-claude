@@ -192,12 +192,12 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Ảnh điện thoại có thể chứa toạ độ GPS trong EXIF (PRD mục 7). Giao agent-coder.
 
 **Công việc:**
-- [ ] Cài `sharp`
-- [ ] Áp hướng xoay EXIF vào ảnh rồi mới bỏ metadata, trước khi upload
-- [ ] Xử lý file đúng magic bytes nhưng không giải mã được
-- [ ] Xử lý mỗi process một ảnh tại một thời điểm (D29)
-- [ ] Thêm test với ảnh có EXIF GPS và ảnh chụp xoay, sinh bằng `sharp` (`jpegBuffer` trong test chỉ có magic bytes)
-- [ ] Thử với ảnh điện thoại thật, gồm kiểm tra `failOn: 'warning'` có từ chối nhầm không
+- [x] Cài `sharp`
+- [x] Áp hướng xoay EXIF vào ảnh rồi mới bỏ metadata, trước khi upload
+- [x] Xử lý file đúng magic bytes nhưng không giải mã được
+- [x] Xử lý mỗi process một ảnh tại một thời điểm (D29)
+- [x] Thêm test với ảnh có EXIF GPS và ảnh chụp xoay, sinh bằng `sharp` (`jpegBuffer` trong test chỉ có magic bytes)
+- [ ] Thử với ảnh điện thoại thật, gồm kiểm tra `failOn: 'warning'` có từ chối nhầm không (mới thử ảnh mẫu công khai, chờ người dùng chốt, xem Kết quả)
 
 **Acceptance Criteria:**
 - Ảnh trong Storage không còn EXIF/GPS
@@ -209,17 +209,32 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - Ảnh được xử lý tuần tự trong mỗi process (D29)
 - Đã thử với ảnh điện thoại thật
 
+**Kết quả (2026-11-03):** đạt 7/8 acceptance criteria. Mục "Đã thử với ảnh điện thoại thật" mới đạt một phần, chờ người dùng chốt. Cài `sharp` 0.35.5 (yêu cầu Node `>=20.9.0`), xử lý ảnh ở `backend/src/services/bodyPhoto.processor.js`, không phải sửa validator, controller, frontend.
+
+- **Code:** `npm test` exit 0, 169 pass, 0 fail (40 test mới, 129 test cũ không phải sửa). Lint backend, frontend và build frontend exit 0.
+- **Thử gỡ code (agent-coder chạy, agent chính chưa chạy lại):** upload buffer gốc, bỏ `autoOrient`, thêm `keepMetadata`, bỏ hàng đợi, bỏ kiểm tra pixel, chỉ encode 1 lần, `failOn: 'none'`, bỏ phân loại OOM, chuyển xử lý xuống sau `SELECT` đều làm test fail. Bỏ `.toColourspace('srgb')` thì test vẫn pass, vì mặc định của `sharp` đã chuyển sRGB khi bỏ metadata.
+- **Giao diện (Chrome headless, 1280 px và 360 px, `NODE_ENV=production`, Supabase thật):** 19/19 kiểm tra đạt. JPEG cụt: hiện "Không đọc được ảnh...", giữ form, `updatedAt` không đổi. PNG 7001 × 10000: hiện "Ảnh quá lớn để xử lý...", DB không đổi. Ảnh iPhone 4S orientation 6: byte trong Storage 2448 × 3264, không còn EXIF, ICC, XMP, orientation; tải lại trang vẫn hiện ảnh dọc. Ảnh GPS mẫu (`DSCN0010`) qua API: đầu vào có EXIF, byte trong Storage không còn.
+- **Ảnh mẫu công khai:** `processBodyPhoto` chạy trên 44 file từ `drewnoakes/metadata-extractor-images` và `ianare/exif-samples`, trong đó 28 ảnh từ điện thoại (iPhone 4 tới 6 Plus, Pixel 2, Galaxy S tới Note 8, OnePlus 8...). Không từ chối nhầm file nào; 1 file bị từ chối là `corrupted.jpg`, repo nguồn ghi là hỏng. Riêng 5 ảnh trên 5 MB chỉ đi qua processor, app thật sẽ chặn trước bằng giới hạn 5 MB (xem backlog).
+- **Dọn dữ liệu:** tài khoản QA đã xoá, `profiles` 3 dòng, bucket 0 object như trước. Cổng 4100, 5199 và cổng debug Chrome đã trống.
+
+**Chưa kiểm tra và lý do:**
+- **Ảnh chụp từ điện thoại của người dùng, nhất là máy đời mới:** không lục ảnh cá nhân trên máy. Ảnh mẫu đa số là máy đời cũ, chỉ 1 ảnh mẫu (iPhone 4S) đi hết luồng qua giao diện, nên chưa loại trừ được `failOn: 'warning'` từ chối nhầm trên máy đời mới.
+- **Hết bộ nhớ thật:** chỉ giả lập bằng `sharp` bọc ngoài; chưa đo bộ nhớ đỉnh trên instance nhỏ.
+- **Điện thoại thật:** 360 px chạy bằng giả lập của Chrome.
+
 ---
 
 ### 8. Đồng bộ tài liệu US-02 (Priority: Low)
 **Mô tả:** `US-02.md` còn lệch với thiết kế đã chốt. Giao agent-ba.
 
 **Công việc:**
-- [ ] Đổi "URL được lưu trong hồ sơ" thành lưu path, API trả signed URL
-- [ ] Bỏ chữ "có thể" ở việc xoá ảnh cũ, vì thiết kế đã quyết định xoá
+- [x] Đổi "URL được lưu trong hồ sơ" thành lưu path, API trả signed URL
+- [x] Bỏ chữ "có thể" ở việc xoá ảnh cũ, vì thiết kế đã quyết định xoá
 
 **Acceptance Criteria:**
 - `US-02.md` khớp `design/PRD.md` và `design/database/schema.md`
+
+**Kết quả (2026-11-03):** đạt. Sửa 6 dòng trong `US-02.md`: ngoài 2 công việc trên còn có "gắn URL vào hồ sơ", "lưu profile + URL ảnh", "URL ảnh" ở AC xem hồ sơ, "public/private tùy thiết kế". Bỏ câu trích nội dung cũ của US-02 ở `design/database/schema.md` mục 4. Agent chính đã đọc diff và đối chiếu với D31, schema mục 4 và `profile.service.js`. Task thuần tài liệu nên không chạy test, lint, build.
 
 ---
 
@@ -227,19 +242,102 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 **Mô tả:** Repo public và `design/database/schema.md` ghi mật khẩu dạng thô của 3 tài khoản seed (có một admin), các tài khoản này đang nằm trên project Supabase. Giao agent-coder.
 
 **Công việc:**
-- [ ] Xoá mật khẩu dạng thô khỏi `design/database/schema.md`
-- [ ] Đổi mật khẩu hoặc xoá 3 tài khoản seed trên Supabase (người dùng xác nhận lúc thực hiện)
-- [ ] Ghi cách tạo tài khoản dev để test thủ công
+- [x] Xoá mật khẩu dạng thô khỏi `design/database/schema.md`
+- [x] Xoá 3 tài khoản seed trên Supabase (người dùng đã chọn xoá ngày 2026-11-03)
+- [x] Xoá `migrations/003_seed_profiles.sql` (phát hiện khi làm task: file ghi mật khẩu thô trong comment, chạy lại sẽ tạo lại tài khoản với mật khẩu đã lộ; người dùng đã chọn xoá file)
+- [x] Ghi cách tạo tài khoản dev để test thủ công
 
 **Acceptance Criteria:**
 - Môi trường deploy không còn tài khoản seed dùng mật khẩu đã công khai (đã xoá hoặc đổi mật khẩu)
 - Đăng nhập bằng mật khẩu cũ thất bại
 - Có cách lấy tài khoản dev mà không để lộ mật khẩu trong repo
+- Bản hiện tại của repo không còn mật khẩu seed dạng thô và không còn file seed tạo lại các tài khoản này
 
 > Ghi chú: mật khẩu cũ vẫn còn trong lịch sử git, nên phải đổi hoặc xoá trên DB, không chỉ sửa file.
 
+**Kết quả (2026-11-03):** đạt 4/4 acceptance criteria trên project Supabase hiện tại.
+
+- **DB (agent chính đọc lại):** `profiles` 0 dòng, bucket `body-photos` 0 object.
+- **Đăng nhập mật khẩu cũ:** agent-coder đo trước khi xoá cả 3 email trả `200`. Agent chính chạy lại sau khi xoá: cả 3 trả `401 INVALID_CREDENTIALS`, `GET /api/health` trả `200`.
+- **Tài khoản dev:** cách tạo ghi ở `README.md`. agent-coder đã thử đăng ký, đổi role admin bằng SQL, đăng nhập lại ra `role = admin`, rồi xoá tài khoản thử.
+- **Repo:** không còn mật khẩu seed dạng thô, hash bcrypt hay file `003`. `npm test` exit 0 (169 pass, 0 fail), lint backend, frontend và build frontend exit 0.
+
+**Chưa kiểm tra và lý do:**
+- **Môi trường khác:** chỉ kiểm tra project mà `backend/.env` đang trỏ tới. Môi trường nào từng chạy `003` thì phải xoá các tài khoản này trước khi dùng.
+- **Giao diện:** không thử đăng nhập trên trình duyệt, chỉ gọi API.
+- **Lịch sử git:** mật khẩu và hash cũ vẫn còn trong lịch sử, không còn tác dụng vì tài khoản đã xoá. Không dùng lại hai mật khẩu đó ở đâu khác.
+
+---
+
+### 10. Lỗi ảnh từ server không nhìn thấy trên màn hình nhỏ (Priority: Medium, phát hiện ở Task 7)
+**Mô tả:** Lỗi `INVALID_FILE_TYPE`, `FILE_TOO_LARGE` từ server hiện ở vùng ảnh, nhưng nút Lưu nằm xa bên dưới và trang không cuộn. Đo ở 360 × 740: sau khi bấm Lưu với JPEG cụt, dòng lỗi nằm trên mép màn hình 458 px, focus ở `BODY`, nên người dùng chỉ thấy nút bật lại. Task 7 làm lỗi này dễ gặp hơn, vì client không phát hiện được ảnh quá 70 triệu pixel hay file cụt. Giao agent-coder.
+
+**Công việc:**
+- [x] Đưa lỗi ảnh từ server vào vùng nhìn thấy và chuyển focus tới đó
+- [x] Cập nhật `design/screens.md`
+
+**Acceptance Criteria:**
+- Ở 360 px, sau khi bấm Lưu và server trả lỗi ảnh, dòng lỗi nằm trọn trong màn hình
+- Trình đọc màn hình đọc được lỗi
+- Desktop và các lỗi field hiện có không đổi hành vi
+
+**Kết quả (2026-11-03):** đạt, riêng tiêu chí trình đọc màn hình mới kiểm tra qua cây accessibility. `ProfileForm` tăng bộ đếm khi server trả lỗi ảnh và không có lỗi field; `BodyPhotoPicker` focus vào dòng lỗi, trình duyệt cuộn theo `scroll-padding-top` có sẵn.
+
+- **Code:** frontend lint, build và backend `npm test` exit 0. Frontend chưa có test tự động nên hành vi này chỉ được kiểm tra thủ công bằng script.
+- **Đo trên Chrome headless, 360 × 740, bấm thật, agent chính chạy lại:** dòng lỗi trước khi sửa ở `top -458`. Sau khi sửa, JPEG cụt `391–428`, PNG quá lớn `381–438`, lỗi lặp lại lần hai `391–428`; header kết thúc ở 65, focus nằm ở dòng lỗi.
+- **Đo do agent-coder chạy, agent chính chưa chạy lại:** 320 × 640 và 1280 × 900 đều thấy lỗi, desktop không đổi `scrollY`; `400 INVALID_HEIGHT` giả lập vẫn focus vào ô chiều cao; cây accessibility cho phần tử đang focus có tên đúng câu lỗi, alert có `role="alert"`.
+- **Lưu thành công làm `scrollY` đổi 1161 → 1251:** do scroll anchoring của trình duyệt, không phải code mới: tắt `overflow-anchor` thì `scrollY` giữ 1161. Không phải lỗi; nhưng đo lượt này phát hiện vấn đề ở Task 11.
+- **Dọn dữ liệu:** tài khoản QA đã xoá, `profiles` 3 dòng, bucket 0 object. Các cổng test đã trống.
+
+**Chưa kiểm tra và lý do:**
+- **Trình đọc màn hình thật (NVDA, VoiceOver):** chưa thử.
+- **Có đồng thời lỗi field và lỗi ảnh từ server:** API không trả cả hai trong một lần, chỉ đọc code.
+- **Điện thoại thật:** 360 px chạy bằng giả lập của Chrome.
+
+---
+
+### 11. Thông báo chung không nhìn thấy trên màn hình nhỏ (Priority: Medium, phát hiện ở Task 10)
+**Mô tả:** Cùng loại với Task 10 nhưng ở thông báo chung của form. Đo ở 360 × 740: sau khi bấm Lưu thành công, Alert "Lưu thành công." nằm ở `top -216`, `bottom -146`, tức ngoài màn hình, focus ở `BODY`. Người dùng không thấy xác nhận đã lưu. Các lỗi chung (`429`, `INVALID_UPLOAD`, `UPLOAD_FAILED`, `500`) chưa đo, cần kiểm tra cùng lúc. Giao agent-coder.
+
+**Công việc:**
+- [x] Đo vị trí các lỗi chung ở 360 px
+- [x] Đưa thông báo chung vào vùng nhìn thấy sau khi bấm Lưu, không tranh focus với lỗi field và lỗi ảnh
+- [x] Cập nhật `design/screens.md`
+
+**Acceptance Criteria:**
+- Ở 360 px, sau khi bấm Lưu, "Lưu thành công." và các lỗi chung nằm trọn trong màn hình
+- Trình đọc màn hình đọc được thông báo
+- Lỗi field, lỗi ảnh (Task 10) và desktop không đổi hành vi
+
+**Kết quả (2026-11-03):** đạt ở 360 px; tiêu chí trình đọc màn hình mới kiểm tra qua cây accessibility; desktop có một thay đổi nhỏ ghi bên dưới. `ProfileForm` tăng bộ đếm khi lưu thành công hoặc có lỗi chung và focus vào nội dung Alert, cùng cách với Task 10. Thứ tự focus: lỗi field, lỗi ảnh, thông báo chung.
+
+- **Code:** frontend lint, build và backend `npm test` exit 0. Frontend chưa có test tự động nên hành vi này chỉ được kiểm tra bằng script.
+- **Đo trên Chrome headless, bấm thật, agent chính chạy lại:**
+
+| Trường hợp | 360 × 740 (top, bottom) | 320 × 640 (top, bottom) |
+|---|---|---|
+| Lưu thành công, chưa có ảnh (2 dòng) | 375, 445 | 315, 405 |
+| Lưu thành công, có ảnh | 387, 435 | 337, 385 |
+| `429` | 367, 453 | 317, 403 |
+| `INVALID_UPLOAD`, `UPLOAD_FAILED`, lỗi mạng | 377, 443 | 327, 393 |
+| `500` | 387, 435 | 327, 393 |
+
+- **Các lần đo trên:** mỗi lỗi chung bấm hai lần liên tiếp, cả hai lần cùng vị trí; header kết thúc ở 65, focus nằm trong Alert. Lỗi giả lập đều được xác nhận đã chặn đúng request PUT.
+- **Hồi quy, agent chính chạy lại:** lỗi field server và lỗi client vẫn focus ô chiều cao; `INVALID_FILE_TYPE` (hai lần) và `FILE_TOO_LARGE` vẫn focus dòng lỗi ảnh. `prefers-reduced-motion` ở 360 px đạt. `401` chuyển về `/login`.
+- **Cây accessibility:** phần tử đang focus có tên đúng nội dung thông báo, cha có role `status` hoặc `alert`.
+- **Desktop 1280 × 900:** Alert đã nằm trọn trong màn hình thì `scrollY` giữ nguyên (0 và 120). Alert bị header che một phần thì có đổi: trước khi sửa (số do agent-coder đo) Alert ở `54–102`, sau khi sửa ở `67–115`, `scrollY` 239 → 226. Đây là thay đổi hành vi nhỏ so với tiêu chí, được giữ vì làm thông báo hết bị che.
+- **Số đo trước khi sửa:** do agent-coder đo, agent chính chưa chạy lại; ở 360 × 740 Alert nằm ở `top` từ -274 đến -232, focus ở `BODY` hoặc nút Lưu.
+- **Dọn dữ liệu:** tài khoản QA đã xoá, `profiles` 3 dòng, bucket 0 object. Các cổng test đã trống.
+
+**Phát hiện, chưa sửa:** Sau lỗi ảnh, nếu lần Lưu tiếp theo gặp lỗi chung thì lỗi ảnh cũ vẫn hiện cùng lỗi mới. Lỗi chung nằm trọn trong màn hình, nhưng ở 360 × 740 Alert lỗi ảnh cũ nằm ở `41–107`, bị header che một phần. Chưa thành task.
+
+**Chưa kiểm tra và lý do:**
+- **Trình đọc màn hình thật (NVDA, VoiceOver):** chưa thử, nên chưa biết `role="alert"` kèm focus có bị đọc hai lần không.
+- **Điện thoại thật:** 360 px chạy bằng giả lập của Chrome.
+
 ## Backlog cho sprint sau
 - **Epic 2 (US-03, US-04):** dự kiến cho Sprint 3.
+- **Xem lại giới hạn 5 MB với ảnh điện thoại (ưu tiên trung bình, phát hiện ở Task 7):** 5/28 ảnh điện thoại mẫu vượt 5 242 880 byte (LG G3, OnePlus 8, Note 4, Note 8, một ảnh iPhone 6,99 MB) nên bị từ chối dù sau khi encode lại ảnh nào cũng dưới 5 MB. Ảnh máy đời mới có thể vượt nhiều hơn. **Acceptance Criteria:** người dùng chốt giữ hay nâng giới hạn; nếu nâng thì cập nhật multer, bucket, client, PRD, và đo lại bộ nhớ.
 - **Kiểm tra bucket trước deploy (ưu tiên cao, làm trước khi deploy, D30):** ngày 2026-11-02 `body-photos` có 0 object. **Acceptance Criteria:** trước khi deploy, bucket không còn ảnh test và không còn ảnh giữ EXIF/GPS.
 - **Store rate limit dùng chung (làm trước khi chạy nhiều instance, D24):** **Acceptance Criteria:** ngưỡng 20 request mỗi 10 phút đúng trên toàn bộ instance và không mất khi restart.
 - **Giới hạn độ dài hàng đợi xử lý ảnh (ưu tiên thấp, D29):** **Acceptance Criteria:** có số liệu thật về độ dài hàng đợi; hàng đợi đầy thì trả lỗi rõ ràng thay vì chờ tới timeout.

@@ -1,5 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/AppError.js';
+import { uploadFailed } from '../utils/uploadErrors.js';
+import { processBodyPhoto } from './bodyPhoto.processor.js';
 
 const BUCKET = 'body-photos';
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -10,9 +12,6 @@ const PROFILE_COLUMNS =
 
 const tokenInvalid = () =>
   new AppError(401, 'TOKEN_INVALID', 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
-
-const uploadFailed = () =>
-  new AppError(500, 'UPLOAD_FAILED', 'Không thể tải ảnh lên lúc này. Vui lòng thử lại.');
 
 /** Signed URL for a stored photo, or null when there is no photo or the URL cannot be created. */
 async function createPhotoUrl(path) {
@@ -75,13 +74,16 @@ export async function getProfile(userId) {
  * Order follows design/flows/upload-body-photo.md. Input must already be validated.
  * @param {string} userId - from the JWT `sub`
  * @param {ReturnType<import('../validators/profile.validator.js').parseProfileInput>} input
- * @throws {AppError} 401 TOKEN_INVALID | 400 VALIDATION_ERROR | 500 UPLOAD_FAILED
+ * @throws {AppError} 401 TOKEN_INVALID | 400 VALIDATION_ERROR | INVALID_FILE_TYPE | 413 FILE_TOO_LARGE | 500 UPLOAD_FAILED
  */
 export async function updateProfile(userId, { displayName, heightCm, weightKg, photo }) {
   let oldPath = null;
   let newPath = null;
 
   if (photo) {
+    // Before any Supabase call, so a bad image writes nothing (D10, D25).
+    const processed = await processBodyPhoto(photo);
+
     const { data: current, error: selectError } = await supabase
       .from('profiles')
       .select('body_photo_path')
@@ -91,12 +93,12 @@ export async function updateProfile(userId, { displayName, heightCm, weightKg, p
     if (!current) throw tokenInvalid();
     oldPath = current.body_photo_path;
 
-    newPath = `${userId}/${Date.now()}.${photo.ext}`;
+    newPath = `${userId}/${Date.now()}.${processed.ext}`;
     let uploadError;
     try {
       ({ error: uploadError } = await supabase.storage
         .from(BUCKET)
-        .upload(newPath, photo.buffer, { contentType: photo.contentType, upsert: false }));
+        .upload(newPath, processed.buffer, { contentType: processed.contentType, upsert: false }));
     } catch (err) {
       uploadError = err;
     }
