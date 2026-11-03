@@ -197,7 +197,7 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - [x] Xử lý file đúng magic bytes nhưng không giải mã được
 - [x] Xử lý mỗi process một ảnh tại một thời điểm (D29)
 - [x] Thêm test với ảnh có EXIF GPS và ảnh chụp xoay, sinh bằng `sharp` (`jpegBuffer` trong test chỉ có magic bytes)
-- [ ] Thử với ảnh điện thoại thật, gồm kiểm tra `failOn: 'warning'` có từ chối nhầm không (mới thử ảnh mẫu công khai, chờ người dùng chốt, xem Kết quả)
+- [ ] ~~Thử với ảnh điện thoại thật, gồm kiểm tra `failOn: 'warning'` có từ chối nhầm không~~ (bỏ qua, người dùng chốt ngày 2026-11-03; mới thử ảnh mẫu công khai, xem Kết quả)
 
 **Acceptance Criteria:**
 - Ảnh trong Storage không còn EXIF/GPS
@@ -207,9 +207,9 @@ US-02 đã được làm và merge ở Sprint 1 Task 7. Bảng dưới lập t�
 - Ảnh quá 70 triệu pixel, hoặc vẫn trên 5 MB sau encode lần 2, trả `413 FILE_TOO_LARGE` (D26, D27)
 - Ảnh gần 5 MB lớn lên khi encode không gây `500`
 - Ảnh được xử lý tuần tự trong mỗi process (D29)
-- Đã thử với ảnh điện thoại thật
+- ~~Đã thử với ảnh điện thoại thật~~ (bỏ qua, người dùng chốt ngày 2026-11-03)
 
-**Kết quả (2026-11-03):** đạt 7/8 acceptance criteria. Mục "Đã thử với ảnh điện thoại thật" mới đạt một phần, chờ người dùng chốt. Cài `sharp` 0.35.5 (yêu cầu Node `>=20.9.0`), xử lý ảnh ở `backend/src/services/bodyPhoto.processor.js`, không phải sửa validator, controller, frontend.
+**Kết quả (2026-11-03):** đạt 7/8 acceptance criteria. Mục "Đã thử với ảnh điện thoại thật" chỉ đạt một phần, người dùng chốt bỏ qua ngày 2026-11-03 và chấp nhận rủi ro ghi ở `design/PRD.md` mục 7 (`failOn: 'warning'` có thể từ chối nhầm; nếu gặp thì hạ xuống `error`). Cài `sharp` 0.35.5 (yêu cầu Node `>=20.9.0`), xử lý ảnh ở `backend/src/services/bodyPhoto.processor.js`, không phải sửa validator, controller, frontend.
 
 - **Code:** `npm test` exit 0, 169 pass, 0 fail (40 test mới, 129 test cũ không phải sửa). Lint backend, frontend và build frontend exit 0.
 - **Thử gỡ code (agent-coder chạy, agent chính chưa chạy lại):** upload buffer gốc, bỏ `autoOrient`, thêm `keepMetadata`, bỏ hàng đợi, bỏ kiểm tra pixel, chỉ encode 1 lần, `failOn: 'none'`, bỏ phân loại OOM, chuyển xử lý xuống sau `SELECT` đều làm test fail. Bỏ `.toColourspace('srgb')` thì test vẫn pass, vì mặc định của `sharp` đã chuyển sRGB khi bỏ metadata.
